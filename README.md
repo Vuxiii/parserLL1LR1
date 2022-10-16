@@ -2,3 +2,5 @@
 
 Parser tool implementing LL(1) and LR(1) parsing methods.
 It parses using CFGs
+
+To Compile: `javac -d . App.java`
