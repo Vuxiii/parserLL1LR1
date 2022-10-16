@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -67,6 +68,8 @@ public class App {
 
             LLparser.parse( g );
         }
+
+        System.out.println( LLparser.parsingTable(null, null, null) );
     }
 }
 
@@ -353,27 +356,17 @@ class LLparser {
 
     public static String parsingTable( Set<NonTerminal> nulls, Map<NonTerminal, Set<Terminal> > firsts, Map< NonTerminal, Set<Terminal> > follows ) {
 
+        TablePrinter p = new TablePrinter();
 
+        p.addLast( new String[] {"Nullable", "Firsts", "Follow"} );
+        p.addLast( new String[] {"x->y", "Firsts", "ajkshd d"} );
+        p.addLast( new String[] {"asdasdasdasdasd", " 3123 2", "Follow"} );
+        p.addLast( new String[] {"kajshd iausdh ", "2", "alkfja oij9j3qlk a.sd"} );
 
-        return "";
+        return p.compute();
     }
 
 }
-
-class TablePrinter {
-
-    List< String[] > table;
-    int cols;
-    
-    public TablePrinter( int n ) {
-        table = new ArrayList<>();
-        cols = n;
-    }
-
-    
-
-}
-
 
 class LRparser {
 
