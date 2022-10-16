@@ -1,75 +1,145 @@
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 public class App {
     public static void main( String[] args ) {
-        {
-            Grammar g = new Grammar();
-            NonTerminal Z = new NonTerminal( "Z" );
-            NonTerminal Y = new NonTerminal( "Y" );
-            NonTerminal X = new NonTerminal( "X" );
+        // {
+        //     Grammar g = new Grammar();
+        //     NonTerminal Z = new NonTerminal( "Z" );
+        //     NonTerminal Y = new NonTerminal( "Y" );
+        //     NonTerminal X = new NonTerminal( "X" );
 
-            Terminal d = new Terminal( "d" );
-            Terminal epsilon = new Terminal();
-            Terminal c = new Terminal( "c" );
-            Terminal a = new Terminal( "a" );
+        //     Terminal d = new Terminal( "d" );
+        //     Terminal epsilon = new Terminal();
+        //     Terminal c = new Terminal( "c" );
+        //     Terminal a = new Terminal( "a" );
 
-            g.add_rule( Z, List.of( d ) );
-            g.add_rule( Z, List.of( X, Y, Z ) );
+        //     g.add_rule( Z, List.of( d ) );
+        //     g.add_rule( Z, List.of( X, Y, Z ) );
             
-            g.add_rule( Y, List.of( epsilon ) );
-            g.add_rule( Y, List.of( c ) );
+        //     g.add_rule( Y, List.of( epsilon ) );
+        //     g.add_rule( Y, List.of( c ) );
 
-            g.add_rule( X, List.of( Y ) );
-            g.add_rule( X, List.of( a ) );
+        //     g.add_rule( X, List.of( Y ) );
+        //     g.add_rule( X, List.of( a ) );
 
-            LLparser.parse( g );
-        }
+        //     LLparser.parse( g );
+        // }
 
-        System.out.println( "-".repeat( 10 ) );
         {
             Grammar g = new Grammar();
-            NonTerminal SS_ = new NonTerminal( "SS'" );
             NonTerminal S = new NonTerminal( "S" );
-            NonTerminal B = new NonTerminal( "B" );
             NonTerminal E = new NonTerminal( "E" );
-            NonTerminal X = new NonTerminal( "X" );
+            NonTerminal E_ = new NonTerminal( "E'" );
+            NonTerminal T = new NonTerminal( "T" );
+            NonTerminal T_ = new NonTerminal( "T'" );
+            NonTerminal F = new NonTerminal( "F" );
 
-            Terminal bslash = new Terminal( "\\" );
-            Terminal b = new Terminal( "b" );
-            Terminal e = new Terminal( "e" );
-            Terminal lcurl = new Terminal( "{" );
-            Terminal rcurl = new Terminal( "}" );
-            Terminal w = new Terminal( "w" );
-            Terminal epsilon = new Terminal();
+            Terminal plus = new Terminal( "+" );
+            Terminal minus = new Terminal( "-" );
+            Terminal times = new Terminal( "*" );
+            Terminal div = new Terminal( "/" );
+            Terminal lparen = new Terminal( "(" );
+            Terminal rparen = new Terminal( ")" );
             Terminal dollar = new Terminal( "$" );
+            Terminal id = new Terminal( "id" );
+            Terminal num = new Terminal( "num" );
+            Terminal epsilon = new Terminal();
 
+            g.add_rule( S, List.of( E, dollar ) );
 
-            g.add_rule( SS_, List.of(S, dollar) );
+            g.add_rule( E, List.of( T, E_ ) );
+            
+            g.add_rule( E_, List.of( plus, T, E_ ) );
+            g.add_rule( E_, List.of( minus, T, E_ ) );
+            g.add_rule( E_, List.of( epsilon ) );
 
-            g.add_rule( S, List.of(epsilon) );
-            g.add_rule( S, List.of(X, S) );
+            g.add_rule( T, List.of( F, T_ ) );
             
-            g.add_rule( B, List.of(bslash, b, lcurl, w, rcurl) );
-            
-            g.add_rule( E, List.of(bslash, e, lcurl, w, rcurl) );
-            
-            g.add_rule( X, List.of(B, S, E) );
-            g.add_rule( X, List.of(lcurl, S, rcurl) );
-            g.add_rule( X, List.of(w) );
-            g.add_rule( X, List.of(b) );
-            g.add_rule( X, List.of(e) );
-            g.add_rule( X, List.of(bslash, w) );
+            g.add_rule( T_, List.of( times, F, T_ ) );
+            g.add_rule( T_, List.of( div, F, T_ ) );
+            g.add_rule( T_, List.of( epsilon ) );
+
+            g.add_rule( F, List.of( id ) );
+            g.add_rule( F, List.of( num ) );
+            g.add_rule( F, List.of( lparen, E, rparen ) );
 
             LLparser.parse( g );
         }
 
-        System.out.println( LLparser.parsingTable(null, null, null) );
+        // System.out.println( "-".repeat( 10 ) );
+        // {
+        //     Grammar g = new Grammar();
+        //     NonTerminal SS_ = new NonTerminal( "SS'" );
+        //     NonTerminal S = new NonTerminal( "S" );
+        //     NonTerminal B = new NonTerminal( "B" );
+        //     NonTerminal E = new NonTerminal( "E" );
+        //     NonTerminal X = new NonTerminal( "X" );
+
+        //     Terminal bslash = new Terminal( "\\" );
+        //     Terminal b = new Terminal( "b" );
+        //     Terminal e = new Terminal( "e" );
+        //     Terminal lcurl = new Terminal( "{" );
+        //     Terminal rcurl = new Terminal( "}" );
+        //     Terminal w = new Terminal( "w" );
+        //     Terminal epsilon = new Terminal();
+        //     Terminal dollar = new Terminal( "$" );
+
+
+        //     g.add_rule( SS_, List.of(S, dollar) );
+
+        //     g.add_rule( S, List.of(epsilon) );
+        //     g.add_rule( S, List.of(X, S) );
+            
+        //     g.add_rule( B, List.of(bslash, b, lcurl, w, rcurl) );
+            
+        //     g.add_rule( E, List.of(bslash, e, lcurl, w, rcurl) );
+            
+        //     g.add_rule( X, List.of(B, S, E) );
+        //     g.add_rule( X, List.of(lcurl, S, rcurl) );
+        //     g.add_rule( X, List.of(w) );
+        //     g.add_rule( X, List.of(b) );
+        //     g.add_rule( X, List.of(e) );
+        //     g.add_rule( X, List.of(bslash, w) );
+
+        //     LLparser.parse( g );
+
+            
+        // }
+
+        // System.out.println( "-".repeat( 10 ) );
+        // {
+        //     Grammar g = new Grammar();
+        //     NonTerminal S = new NonTerminal( "S" );
+        //     NonTerminal M = new NonTerminal( "M" );
+        //     NonTerminal T = new NonTerminal( "T" );
+
+        //     Terminal a = new Terminal( "a" );
+        //     Terminal plus = new Terminal("+");
+        //     Terminal dollar = new Terminal( "$" );
+        //     Terminal epsilon = new Terminal();
+
+
+
+        //     g.add_rule( S, List.of(T, M, dollar) );
+            
+        //     g.add_rule( M, List.of(plus, T, M) );
+        //     g.add_rule( M, List.of(epsilon) );
+            
+        //     g.add_rule( T, List.of(a) );
+            
+        //     LLparser.parse( g );
+
+            
+        // }
     }
 }
 
@@ -77,7 +147,7 @@ class Term {
     String name = null;
 
     public String toString() {
-        return "Term: " + name;
+        return name;
     }
 }
 
@@ -93,7 +163,7 @@ class Terminal extends Term {
     }
 
     public String toString() {
-        return "Term: " + (is_epsilon ? "epsilon" : name);
+        return (is_epsilon ? "€" : name);
     }
 }
 
@@ -121,6 +191,26 @@ class Grammar {
 
     public Grammar() {
         rules = new HashMap<>();
+    }
+
+    public List<NonTerminal> nonTerms() {
+        List<NonTerminal> li = new ArrayList<>();
+
+        li.addAll( rules.keySet() );
+
+        return li;
+    }
+
+    public Set<Terminal> terms() {
+        Set<Terminal> li = new HashSet<>();
+
+        for ( NonTerminal N : rules.keySet() ) 
+            for ( Rule r : rules.get(N) ) 
+                for ( Term t : r.rules )
+                    if ( t instanceof Terminal ) 
+                        li.add( (Terminal) t );
+
+        return li;
     }
 
     public void add_rule( NonTerminal key, List<Term> rule ) {
@@ -153,17 +243,19 @@ class LLparser {
         Set<NonTerminal> nulls = LLparser.compute_null( g );
 
         System.out.println( "Nulls" );
-        nulls.forEach( n -> System.out.println( n ));
+        nulls.forEach( n -> System.out.println( "\t" + n ));
         
         Map<NonTerminal, Set<Terminal> > firsts = compute_first( g, nulls );
 
         System.out.println( "Firsts" );
-        firsts.forEach( (k, v) -> System.out.println( k + ": " + v ));
+        firsts.forEach( (k, v) -> System.out.println( "\t" + k + ": " + v ));
 
         Map< NonTerminal, Set<Terminal> > follows = compute_follow( g, nulls, firsts );
 
         System.out.println( "Follows" );
-        follows.forEach( (k, v) -> System.out.println( k + ": " + v ));
+        follows.forEach( (k, v) -> System.out.println( "\t" + k + ": " + v ));
+
+        System.out.println( LLparser.parsingTable(g, nulls, firsts, follows) );
     }
 
     public static Set<NonTerminal> compute_null( Grammar g ) {
@@ -323,7 +415,7 @@ class LLparser {
                                         int j = 1;
                                         while ( nulls.contains( (NonTerminal) next ) ) {
                                             next = i+offset+j < r.size() ? r.rules.get( i+offset+j ) : null;
-                                            if ( next == null ) break;
+                                            if ( next == null || next instanceof Terminal ) break;
                                             // System.out.println( "Follow(" + current + ") += First(" + next + ") = " + firsts.get( (NonTerminal) next ) + "\tRule 2.5" );
                                             follow.get( current ).addAll( firsts.get( (NonTerminal) next ) );
                                             
@@ -354,14 +446,64 @@ class LLparser {
         return follow;
     }
 
-    public static String parsingTable( Set<NonTerminal> nulls, Map<NonTerminal, Set<Terminal> > firsts, Map< NonTerminal, Set<Terminal> > follows ) {
+    public static String parsingTable( Grammar g, Set<NonTerminal> nulls, Map<NonTerminal, Set<Terminal> > firsts, Map< NonTerminal, Set<Terminal> > follows ) {
 
         TablePrinter p = new TablePrinter();
 
-        p.addLast( new String[] {"Nullable", "Firsts", "Follow"} );
-        p.addLast( new String[] {"x->y", "Firsts", "ajkshd d"} );
-        p.addLast( new String[] {"asdasdasdasdasd", " 3123 2", "Follow"} );
-        p.addLast( new String[] {"kajshd iausdh ", "2", "alkfja oij9j3qlk a.sd"} );
+        // p.addLast( new String[] {"", "Nullable", "Firsts", "Follow"} );
+        
+        List<Terminal> terms = new ArrayList<>();
+        List<NonTerminal> nonTerms = g.nonTerms();
+        terms.addAll( g.terms().parallelStream().filter( term -> { return !term.is_epsilon; } ).collect( Collectors.toList() ) );
+        
+        // Sort the arrays.
+        terms.sort( Comparator.comparing( Term::toString ) );
+        nonTerms.sort( Comparator.comparing( Term::toString ) );
+
+        {
+            String[] s = new String[terms.size() + 1];
+            s[0] = "NT \\ T";
+            for ( int i = 0; i < terms.size(); ++i )
+                s[i+1] = "'" + terms.get(i).name + "'" ;
+            p.addFirst( s );
+        }   
+
+        for ( NonTerminal X : nonTerms ) {
+            String[] s = new String[terms.size() + 1];
+            s[0] = X.name;
+            for ( int i = 0; i < terms.size(); ++i ) {
+                Terminal T = terms.get( i );
+                s[i+1] = "";
+                if ( firsts.get( X ).contains( T ) ) {
+                    for ( Rule r : g.rules.get( X )) {
+                        if ( r.rules.get(0) instanceof Terminal ) {
+                            if ( (!((Terminal)r.rules.get(0)).is_epsilon) && r.rules.get(0).name.equals(T.name) )
+                                s[i+1] += X.name + "->" + r.rules + " ";
+                        } else {
+                            // remove the nulls
+                            if ( firsts.get((NonTerminal) r.rules.get(0)).contains( T ) )
+                                s[i+1] += X.name + "->" + r.rules + " ";
+                        }
+
+                    }
+                } else {
+                    boolean allNull = true;
+                    for ( Rule r : g.rules.get( X ) ) {
+                        allNull = r.rules.stream().allMatch( t -> { return nulls.contains( t ) || (t instanceof Terminal && ((Terminal) t).is_epsilon ); } );
+                        if ( allNull && follows.get(X).contains( T ) ) {
+                            s[i+1] += X.name + "->" + r.rules + " ";
+                            System.out.println( T + " is in " + X);
+                            System.out.println( T + " is in " + follows.get(X) );
+                            // break;
+                        }
+                    }
+
+                }
+
+            }
+            p.addLast( s );
+        }
+
 
         return p.compute();
     }
