@@ -32,6 +32,12 @@ public class Utils {
         return list;
     }
 
+    public static<T> List<T> toList( Collection<T> el ) {
+        List<T> li = new ArrayList<T>();
+        li.addAll( el );
+        return li;
+    }
+
     public static<T> Set<T> toSet( T el ) {
         Set<T> set = new HashSet<T>();
         set.add( el );

@@ -11,6 +11,29 @@ import java.util.stream.Collectors;
 
 public class App {
     public static void main( String[] args ) {
+        
+        NonTerminal S = new NonTerminal( "S" );
+        NonTerminal E = new NonTerminal( "E" );
+        NonTerminal T = new NonTerminal( "T" );
+
+        Terminal dollar = new Terminal( "$" );
+        Terminal plus = new Terminal( "+" );
+        Terminal x = new Terminal( "x" );
+
+        Grammar g = new Grammar();
+
+        g.add_lrRule( S, List.of( E, dollar ) );
+        
+        g.add_lrRule( E, List.of( T, plus, E ) );
+        g.add_lrRule( E, List.of( T ) );
+
+        g.add_lrRule( T, List.of( x ) );
+
+        LRparser.parse( g, S );
+
+    }
+
+    public static void LLsample() {
         // {
         //     Grammar g = new Grammar();
         //     NonTerminal Z = new NonTerminal( "Z" );
@@ -146,6 +169,9 @@ public class App {
 class Term {
     String name = null;
 
+    public Term() {}
+    public Term( String name ) { this.name = name; }
+
     public String toString() {
         return name;
     }
@@ -171,26 +197,17 @@ class NonTerminal extends Term {
     public NonTerminal( String n ) {
         name = n;
     }
-
-    // public int hashCode() {
-    //     return name.hashCode();
-    // }
-
-    // public boolean equals( Object other ) {
-    //     if ( other == null ) return false;
-    //     if ( !(other instanceof NonTerminal) ) return false;
-    //     NonTerminal o = (NonTerminal) other;
-    //     return name.equals( o.name );
-    // }
 }
 
 
 class Grammar {
 
     Map< NonTerminal, List<Rule> > rules;
+    Map< NonTerminal, List<LRRule> > lrRules;
 
     public Grammar() {
         rules = new HashMap<>();
+        lrRules = new HashMap<>();
     }
 
     public List<NonTerminal> nonTerms() {
@@ -206,7 +223,7 @@ class Grammar {
 
         for ( NonTerminal N : rules.keySet() ) 
             for ( Rule r : rules.get(N) ) 
-                for ( Term t : r.rules )
+                for ( Term t : r.terms )
                     if ( t instanceof Terminal ) 
                         li.add( (Terminal) t );
 
@@ -217,24 +234,212 @@ class Grammar {
         rules.merge( key, Utils.toList( new Rule( rule ) ), (o, n) -> { o.addAll( n ); return o; } );
     }
 
+    public void add_lrRule( NonTerminal key, List<Term> rule ) {
+        lrRules.merge( key, Utils.toList( new LRRule( rule, Utils.toList() ) ), (o, n) -> { o.addAll( n ); return o; } );
+    }
     public List<Rule> get_rule( NonTerminal key ) {
         return rules.get( key );
+    }
+    public List<LRRule> get_lrRule( NonTerminal key ) {
+        return lrRules.get( key );
     }
 }
 
 class Rule {
-    List<Term> rules;
+    public static Term EOR = new Term( "EndOfRule" );
+    List<Term> terms = new ArrayList<>();
 
     public Rule( List<Term> terms ) {
-        rules = new ArrayList<>();
-        rules.addAll( terms );
+        this.terms.addAll( terms );
     }
 
+    public Term get_term( int i ) { return i < size() ? terms.get( i ) : Rule.EOR; }
+
     public int size() {
-        return rules.size();
+        return terms.size();
     }
 }
 
+class LRRule extends Rule {
+    int dot = 0;
+    List<Term> lookahead = new ArrayList<>();
+
+    public LRRule( List<Term> terms, List<Term> lookahead ) {
+        super( terms );
+        this.lookahead = lookahead;
+    }
+
+    public Term get_dot_item() {
+        return terms.get( dot );
+    }
+
+    public String toString() {
+        String s = "";
+
+        s += terms + " :-> " + lookahead;
+
+        return s;
+    }
+}
+
+class LRparser {
+    private static class State {
+        Map<NonTerminal, List<LRRule> > rules = new HashMap<>();
+        Set<LRRule> containedRules = new HashSet<>();
+        // List<Integer> dot = new ArrayList<>();
+
+        Map<Term, State> move_to_state = new HashMap<>();
+
+        void add( NonTerminal X, LRRule r) {
+            containedRules.add( r );
+            move_to_state.put( r.get_term(r.dot), null );
+            if ( rules.containsKey( X ) )
+                rules.get( X ).add( r );
+            else
+                rules.put( X, Utils.toList( r ) );
+        }
+
+        List<LRRule> get_rule( NonTerminal N ) { return rules.get( N ); }
+
+        // int get_dot( int i ) { return dot.get( i ); }
+
+        int size() { return rules.size(); }
+
+        public List<Term> getMoves() {
+            return Utils.toList( move_to_state.keySet() );
+        }
+
+        public String toString() {
+            String s = "";
+
+            for ( NonTerminal X : rules.keySet() ) {
+                for ( LRRule r : rules.get( X ) ) {
+                    s += X + " -> ";
+                    for ( int i = 0; i < r.size(); ++i ) {
+                        Term t = r.terms.get( i );
+                        int dotPos = r.dot;
+        
+                        if ( dotPos == i ) s += ".";
+                        s += t;
+
+                    } 
+                    s += "  \t:-> " + r.lookahead + "\n";
+                }
+                
+            }
+
+            return s.substring(0, s.length());
+        }
+    }
+
+    public static void parse( Grammar g, NonTerminal start ) {
+        State state1 = _computeState( g, start );
+        System.out.println( "\n\nState1\n" + state1.toString() );
+    }
+
+    /**
+     * Computes the initial start state
+     * @param g The grammar
+     * @param start The of the CFG
+     * @return The start state
+     */
+    private static State _computeState( Grammar g, NonTerminal start ) {
+        
+        State ste = new State();
+
+        for ( LRRule r : g.get_lrRule( start ) ) {
+            System.out.println( "adding rule " + r + " to start");
+            ste.add( start, r );
+
+        }
+
+        _computeClosure( ste, g );
+
+        for ( Term move : ste.getMoves() ) 
+            ste.move_to_state.put( move, _computeState( ste, move, g ) );
+
+        return ste;
+    }
+
+    private static void _computeClosure( State state, Grammar g ) {
+        
+
+        List< NonTerminal > addQueue = new LinkedList<>();
+        // Set<Term> visited = new HashSet<>();
+
+        addQueue.addAll( state.rules.keySet() );
+
+        while ( !addQueue.isEmpty() ) {
+            // System.out.println( "Size of queue is " + addQueue.size() );
+            NonTerminal X = addQueue.remove(0);
+            // if ( visited.contains(X) ) continue;
+            // visited.add( X );
+            
+            List<LRRule> rules = state.get_rule( X );
+            // System.out.println( rules );
+            // System.out.println( X + " has " + rules.size() + " rules -> " + rules );
+            for ( int i = 0; i < rules.size(); ++i ) {
+                LRRule rule = rules.get( i );
+                
+                int dotPos = rule.dot;
+
+                // System.out.println( "Looking at rule[" + i + "]:\n" + X + " -> " + rule.terms );
+                
+                if ( dotPos < rule.size() ) {
+                    Term t = rule.get_term( dotPos );
+                    if ( t instanceof NonTerminal ) {
+                        for ( LRRule r : g.get_lrRule( (NonTerminal) t ) ) {
+                            if ( !state.containedRules.contains( r ) ) {
+                                // System.out.println( "Adding rule: " + r + " to " + t);
+
+                                state.add( (NonTerminal) t, r );
+                                addQueue.add( (NonTerminal) t );
+                                
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static State _computeState( State from, Term move, Grammar g ) {
+        
+        System.out.println( "\twith move " + move );
+        System.out.println( from );
+
+        // (1) Collect all the rules where you can make the move.
+        // (2) Generate a new state with these new rules, and compute the closure. 
+        // (3) * Repeat.
+        Map<NonTerminal, List<LRRule> > mapper = new HashMap<>();
+        
+        // (1)
+        for ( NonTerminal X : from.rules.keySet() ) {
+            for ( LRRule rule : from.rules.get( X ) ) {
+                if ( rule.get_dot_item().name.equals( move.name ) )
+                    mapper.merge( X, Utils.toList( rule ), (o, n) -> { o.addAll( n ); return o; } );
+            }
+        }
+
+        System.out.println( mapper );
+
+
+        // (2)
+
+        for ( NonTerminal X : mapper.keySet() ) {
+            System.out.println( "Looking at rule " + X );
+
+            
+
+        }
+
+        // (3)
+
+
+        return null;
+    }
+
+}
 
 class LLparser {
 
@@ -274,9 +479,9 @@ class LLparser {
                     int i = 0;
 
                     // Removes all the first NULLS.
-                    while ( i < rule.size() && ((rule.rules.get( i ) instanceof Terminal && ((Terminal) rule.rules.get( i )).is_epsilon)
-                            || nulls.contains( rule.rules.get( i ) )) ) {
-                        // System.out.println( rule.rules.get( i ) + " is nullable.");
+                    while ( i < rule.size() && ((rule.terms.get( i ) instanceof Terminal && ((Terminal) rule.terms.get( i )).is_epsilon)
+                            || nulls.contains( rule.terms.get( i ) )) ) {
+                        // System.out.println( rule.terms.get( i ) + " is nullable.");
                         ++i;
                     }  
                     
@@ -287,10 +492,10 @@ class LLparser {
 
 
                     // // Check if current is a NonTerminal
-                    // if ( i < rule.size() && rule.rules.get( i ) instanceof NonTerminal ) {
-                    //     if ( !rule.rules.get(i).name.equals( N.name ) ) {
-                    //         nulls.add( (NonTerminal) rule.rules.get( i ) );
-                    //         System.out.println( "Added NonTerminal to NULL " + rule.rules.get( i ) );
+                    // if ( i < rule.size() && rule.terms.get( i ) instanceof NonTerminal ) {
+                    //     if ( !rule.terms.get(i).name.equals( N.name ) ) {
+                    //         nulls.add( (NonTerminal) rule.terms.get( i ) );
+                    //         System.out.println( "Added NonTerminal to NULL " + rule.terms.get( i ) );
                     //     }
                     // }
     
@@ -302,7 +507,6 @@ class LLparser {
 
         return nulls;
     }
-
 
     public static Map< NonTerminal, Set<Terminal> > compute_first( Grammar g, Set<NonTerminal> nulls ) {
 
@@ -324,9 +528,9 @@ class LLparser {
             
             for ( NonTerminal N : g.rules.keySet() ) {
                 for ( Rule r : g.rules.get( N ) ) {
-                    // System.out.println( "\nChecking NonTerm " + N + " -> " + r.rules );
+                    // System.out.println( "\nChecking NonTerm " + N + " -> " + r.terms );
                     int i = 0;
-                    Term current = r.rules.get(i);
+                    Term current = r.terms.get(i);
                     if ( current instanceof Terminal ) {
                         // Ignore epsilons.
                         if ( ((Terminal) current).is_epsilon ) continue;
@@ -365,7 +569,7 @@ class LLparser {
                             
                             
                             i++;
-                            current = i < r.size() ? r.rules.get( i ) : null;
+                            current = i < r.size() ? r.terms.get( i ) : null;
                             addNext = addNext && current != null;
                         }   
                     }
@@ -393,12 +597,12 @@ class LLparser {
                 for ( Rule r : g.rules.get( N ) ) {
                     for ( int i = 0; i < r.size(); ++i ) {
 
-                        if ( r.rules.get( i ) instanceof NonTerminal ) {
+                        if ( r.terms.get( i ) instanceof NonTerminal ) {
                             // System.out.println( "At rule: " + N + " -> " + r.rules );
-                            NonTerminal current = (NonTerminal) r.rules.get( i );
+                            NonTerminal current = (NonTerminal) r.terms.get( i );
                             
                             int offset = 1;
-                            Term next = i+offset < r.size() ? r.rules.get( i+offset ) : null;
+                            Term next = i+offset < r.size() ? r.terms.get( i+offset ) : null;
                             if ( i == r.size() - 1 ){ 
                                 // Because nothing comes after this current NonTerminal, 
                                 // we add First( left hand side ) to Follow( current )
@@ -414,7 +618,7 @@ class LLparser {
                                         
                                         int j = 1;
                                         while ( nulls.contains( (NonTerminal) next ) ) {
-                                            next = i+offset+j < r.size() ? r.rules.get( i+offset+j ) : null;
+                                            next = i+offset+j < r.size() ? r.terms.get( i+offset+j ) : null;
                                             if ( next == null || next instanceof Terminal ) break;
                                             // System.out.println( "Follow(" + current + ") += First(" + next + ") = " + firsts.get( (NonTerminal) next ) + "\tRule 2.5" );
                                             follow.get( current ).addAll( firsts.get( (NonTerminal) next ) );
@@ -431,7 +635,7 @@ class LLparser {
                                         follow.get( current ).add( (Terminal) next );
                                     }
                                     offset++;
-                                    next = i+offset < r.size() ? r.rules.get( i+offset ) : null;
+                                    next = i+offset < r.size() ? r.terms.get( i+offset ) : null;
                                     if ( next instanceof Terminal || (next instanceof NonTerminal && !nulls.contains( (NonTerminal) next) ) )
                                         next = null;
                                 } while ( next != null );
@@ -476,22 +680,22 @@ class LLparser {
                 s[i+1] = "";
                 if ( firsts.get( X ).contains( T ) ) {
                     for ( Rule r : g.rules.get( X )) {
-                        if ( r.rules.get(0) instanceof Terminal ) {
-                            if ( (!((Terminal)r.rules.get(0)).is_epsilon) && r.rules.get(0).name.equals(T.name) )
-                                s[i+1] += X.name + "->" + r.rules + " ";
+                        if ( r.terms.get(0) instanceof Terminal ) {
+                            if ( (!((Terminal)r.terms.get(0)).is_epsilon) && r.terms.get(0).name.equals(T.name) )
+                                s[i+1] += X.name + "->" + r.terms + " ";
                         } else {
                             // remove the nulls
-                            if ( firsts.get((NonTerminal) r.rules.get(0)).contains( T ) )
-                                s[i+1] += X.name + "->" + r.rules + " ";
+                            if ( firsts.get((NonTerminal) r.terms.get(0)).contains( T ) )
+                                s[i+1] += X.name + "->" + r.terms + " ";
                         }
 
                     }
                 } else {
                     boolean allNull = true;
                     for ( Rule r : g.rules.get( X ) ) {
-                        allNull = r.rules.stream().allMatch( t -> { return nulls.contains( t ) || (t instanceof Terminal && ((Terminal) t).is_epsilon ); } );
+                        allNull = r.terms.stream().allMatch( t -> { return nulls.contains( t ) || (t instanceof Terminal && ((Terminal) t).is_epsilon ); } );
                         if ( allNull && follows.get(X).contains( T ) ) {
-                            s[i+1] += X.name + "->" + r.rules + " ";
+                            s[i+1] += X.name + "->" + r.terms + " ";
                             System.out.println( T + " is in " + X);
                             System.out.println( T + " is in " + follows.get(X) );
                             // break;
@@ -507,9 +711,5 @@ class LLparser {
 
         return p.compute();
     }
-
-}
-
-class LRparser {
 
 }
