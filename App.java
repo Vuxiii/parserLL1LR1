@@ -279,7 +279,7 @@ class Grammar {
     }
 
     public LRState checkCache( List<LRRule> rules ) {
-        System.out.println( "Size of cache " + state_cache.size() );
+        // System.out.println( "Size of cache " + state_cache.size() );
         // System.out.println( "Checking for:\t" + rules);
         for ( LRState state : state_cache ) {
             List<LRRule> li = new ArrayList<>();
@@ -442,10 +442,8 @@ class LRparser {
     public static void parse( Grammar g, NonTerminal start ) {
         LRState state1 = _computeState( g, start );
         // System.out.println( "\n\nState1\n" + state1.toString() );
-
-        System.out.println( "PRINTING THE STATES");
+        
         _printStates( g, state1, new HashSet<>() );
-        System.out.println( "PRINTING THE STATES");
 
     }
 
@@ -493,11 +491,11 @@ class LRparser {
 
         for ( Term move : ste.getMoves() ) {
             if ( move.equals( Rule.EOR ) ) continue;
-            System.out.println( "-".repeat( 20 ) );
+            // System.out.println( "-".repeat( 20 ) );
             LRState ns = _computeState( ste, move, g );
             g.cache( ns );
             ste.move_to_state.put( move, ns );
-            System.out.println( "-".repeat( 20 ) );
+            // System.out.println( "-".repeat( 20 ) );
             
         }
 
@@ -548,8 +546,8 @@ class LRparser {
 
     private static LRState _computeState( LRState from, Term move, Grammar g ) {
         
-        System.out.println( "\twith move " + move );
-        System.out.println( from );
+        // System.out.println( "\twith move " + move );
+        // System.out.println( from );
 
         // (1) Collect all the rules where you can make the move.
         // (2) Generate a new state with these new rules
@@ -569,7 +567,7 @@ class LRparser {
 
 
         // (2)
-        System.out.println( "(2)" );
+        // System.out.println( "(2)" );
         LRState ste = new LRState();
 
         for ( NonTerminal X : mapper.keySet() ) {
@@ -585,39 +583,39 @@ class LRparser {
         // System.out.println( ste );
 
         // (3)
-        System.out.println( "(3)" );
+        // System.out.println( "(3)" );
         _computeClosure( ste, g );
-        System.out.println( "After closure:" );
-        System.out.println( ste );
+        // System.out.println( "After closure:" );
+        // System.out.println( ste );
         // for ( LRRule r : ste.containedRules ) 
         //     System.out.println( "ASD " +  r );
         LRState ns = g.checkCache(Utils.toList( ste.containedRules ) );
         if ( ns == null )
             g.cache( ste );
         else {
-            System.out.println( "FOUND A DUPLICATE STATE\n" + ns);
+            // System.out.println( "FOUND A DUPLICATE STATE\n" + ns);
             return ns;
         }
         
         // (4)
 
-        System.out.print( "(4) " );
+        // System.out.print( "(4) " );
         for ( Term new_move : ste.getMoves() ) {
             if ( new_move.equals( Rule.EOR ) ) continue;
             if ( new_move instanceof Terminal && ((Terminal) new_move).is_EOP ) continue;
-            System.out.println( new_move );
-            System.out.println( "-".repeat( 20 ) );
+            // System.out.println( new_move );
+            // System.out.println( "-".repeat( 20 ) );
 
             // ns = g.checkCache( Utils.toList( ste.containedRules ) );
             if ( ns == null ) ns = _computeState( ste, new_move, g );
-            System.out.println( "adding edge " );
-            System.out.println( ste );
-            System.out.println( "With move " + new_move );
-            System.out.println( "TO" );
-            System.out.println( ns );
+            // System.out.println( "adding edge " );
+            // System.out.println( ste );
+            // System.out.println( "With move " + new_move );
+            // System.out.println( "TO" );
+            // System.out.println( ns );
             ste.move_to_state.put( new_move, ns );
             ns = null;
-            System.out.println( "-".repeat( 20 ) );
+            // System.out.println( "-".repeat( 20 ) );
             
         }
 
