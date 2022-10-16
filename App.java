@@ -441,7 +441,6 @@ class LRparser {
 
     public static void parse( Grammar g, NonTerminal start ) {
         LRState state1 = _computeState( g, start );
-        // System.out.println( "\n\nState1\n" + state1.toString() );
         
         _printStates( g, state1, new HashSet<>() );
 
@@ -544,6 +543,13 @@ class LRparser {
         }
     }
 
+    /**
+     * Computes the rest of the states
+     * @param from Which state we move from
+     * @param move With what Symbol
+     * @param g The grammar we are using
+     * @return The state arrived at by traversing with the given "move" from the given "state"
+     */
     private static LRState _computeState( LRState from, Term move, Grammar g ) {
         
         // System.out.println( "\twith move " + move );
