@@ -282,4 +282,136 @@ public class LLParser {
         return p.compute();
     }
 
+    public static void LLSample() {
+        // {
+        //     Grammar g = new Grammar();
+        //     NonTerminal Z = new NonTerminal( "Z" );
+        //     NonTerminal Y = new NonTerminal( "Y" );
+        //     NonTerminal X = new NonTerminal( "X" );
+
+        //     Terminal d = new Terminal( "d" );
+        //     Terminal epsilon = new Terminal();
+        //     Terminal c = new Terminal( "c" );
+        //     Terminal a = new Terminal( "a" );
+
+        //     g.add_rule( Z, List.of( d ) );
+        //     g.add_rule( Z, List.of( X, Y, Z ) );
+            
+        //     g.add_rule( Y, List.of( epsilon ) );
+        //     g.add_rule( Y, List.of( c ) );
+
+        //     g.add_rule( X, List.of( Y ) );
+        //     g.add_rule( X, List.of( a ) );
+
+        //     LLparser.parse( g );
+        // }
+
+        // {
+        //     Grammar g = new Grammar();
+        //     NonTerminal S = new NonTerminal( "S" );
+        //     NonTerminal E = new NonTerminal( "E" );
+        //     NonTerminal E_ = new NonTerminal( "E'" );
+        //     NonTerminal T = new NonTerminal( "T" );
+        //     NonTerminal T_ = new NonTerminal( "T'" );
+        //     NonTerminal F = new NonTerminal( "F" );
+
+        //     Terminal plus = new Terminal( "+" );
+        //     Terminal minus = new Terminal( "-" );
+        //     Terminal times = new Terminal( "*" );
+        //     Terminal div = new Terminal( "/" );
+        //     Terminal lparen = new Terminal( "(" );
+        //     Terminal rparen = new Terminal( ")" );
+        //     Terminal dollar = new Terminal( "$" );
+        //     Terminal id = new Terminal( "id" );
+        //     Terminal num = new Terminal( "num" );
+        //     Terminal epsilon = new Terminal();
+
+        //     g.add_rule( S, List.of( E, dollar ) );
+
+        //     g.add_rule( E, List.of( T, E_ ) );
+            
+        //     g.add_rule( E_, List.of( plus, T, E_ ) );
+        //     g.add_rule( E_, List.of( minus, T, E_ ) );
+        //     g.add_rule( E_, List.of( epsilon ) );
+
+        //     g.add_rule( T, List.of( F, T_ ) );
+            
+        //     g.add_rule( T_, List.of( times, F, T_ ) );
+        //     g.add_rule( T_, List.of( div, F, T_ ) );
+        //     g.add_rule( T_, List.of( epsilon ) );
+
+        //     g.add_rule( F, List.of( id ) );
+        //     g.add_rule( F, List.of( num ) );
+        //     g.add_rule( F, List.of( lparen, E, rparen ) );
+
+        //     LLParser.parse( g );
+        // }
+
+        // System.out.println( "-".repeat( 10 ) );
+        {
+            Grammar g = new Grammar();
+            NonTerminal SS_ = new NonTerminal( "SS'" );
+            NonTerminal S = new NonTerminal( "S" );
+            NonTerminal B = new NonTerminal( "B" );
+            NonTerminal E = new NonTerminal( "E" );
+            NonTerminal X = new NonTerminal( "X" );
+
+            Terminal bslash = new Terminal( "\\" );
+            Terminal b = new Terminal( "b" );
+            Terminal e = new Terminal( "e" );
+            Terminal lcurl = new Terminal( "{" );
+            Terminal rcurl = new Terminal( "}" );
+            Terminal w = new Terminal( "w" );
+            Terminal epsilon = new Terminal();
+            Terminal dollar = new Terminal( "$" );
+
+
+            g.add_rule( SS_, List.of(S, dollar) );
+
+            g.add_rule( S, List.of(epsilon) );
+            g.add_rule( S, List.of(X, S) );
+            
+            g.add_rule( B, List.of(bslash, b, lcurl, w, rcurl) );
+            
+            g.add_rule( E, List.of(bslash, e, lcurl, w, rcurl) );
+            
+            g.add_rule( X, List.of(B, S, E) );
+            g.add_rule( X, List.of(lcurl, S, rcurl) );
+            g.add_rule( X, List.of(w) );
+            g.add_rule( X, List.of(b) );
+            g.add_rule( X, List.of(e) );
+            g.add_rule( X, List.of(bslash, w) );
+
+            LLParser.parse( g );
+
+            
+        }
+
+        // System.out.println( "-".repeat( 10 ) );
+        // {
+        //     Grammar g = new Grammar();
+        //     NonTerminal S = new NonTerminal( "S" );
+        //     NonTerminal M = new NonTerminal( "M" );
+        //     NonTerminal T = new NonTerminal( "T" );
+
+        //     Terminal a = new Terminal( "a" );
+        //     Terminal plus = new Terminal("+");
+        //     Terminal dollar = new Terminal( "$" );
+        //     Terminal epsilon = new Terminal();
+
+
+
+        //     g.add_rule( S, List.of(T, M, dollar) );
+            
+        //     g.add_rule( M, List.of(plus, T, M) );
+        //     g.add_rule( M, List.of(epsilon) );
+            
+        //     g.add_rule( T, List.of(a) );
+            
+        //     LLparser.parse( g );
+
+            
+        // }
+    }
+
 }

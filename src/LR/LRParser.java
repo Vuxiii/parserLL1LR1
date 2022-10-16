@@ -49,7 +49,7 @@ public class LRParser {
         
         LRState ste = new LRState();
 
-        for ( LRRule r : g.get_lrRule( start ) ) {
+        for ( LRRule r : g.get_rule( start ) ) {
             System.out.println( "adding rule " + r + " to start");
             ste.add( start, r );
 
@@ -101,7 +101,7 @@ public class LRParser {
                 if ( dotPos < rule.size() ) {
                     Term t = rule.get_term( dotPos );
                     if ( t instanceof NonTerminal ) {
-                        for ( LRRule r : g.get_lrRule( (NonTerminal) t ) ) {
+                        for ( LRRule r : g.get_rule( (NonTerminal) t ) ) {
                             if ( !state.containedRules.contains( r ) ) {
                                 // System.out.println( "Adding rule: " + r + " to " + t);
 
@@ -201,4 +201,28 @@ public class LRParser {
         return ste;
     }
 
+    public static void LRSample() {
+        {
+            NonTerminal S = new NonTerminal( "S" );
+            NonTerminal E = new NonTerminal( "E" );
+            NonTerminal T = new NonTerminal( "T" );
+    
+            Terminal dollar = new Terminal( "$" );
+            dollar.is_EOP = true;
+            Terminal plus = new Terminal( "+" );
+            Terminal x = new Terminal( "x" );
+    
+            Grammar g = new Grammar();
+    
+            g.add_rule( S, List.of( E, dollar ) );
+            
+            g.add_rule( E, List.of( T, plus, E ) );
+            g.add_rule( E, List.of( T ) );
+    
+            g.add_rule( T, List.of( x ) );
+    
+            LRParser.parse( g, S );
+        }
+    }
+        
 }
