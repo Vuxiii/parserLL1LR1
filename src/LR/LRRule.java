@@ -17,14 +17,14 @@ public class LRRule extends Rule {
     }
 
     public boolean equals( Object other ) {
-        if ( other == null ) return false;
-        if ( !(other instanceof LRRule) ) return false;
+        if ( other == null )                            return false;
+        if ( !(other instanceof LRRule) )               return false;
         LRRule o = (LRRule) other;
-        if ( dot != o.dot ) return false;
-        if ( lookahead.size() != o.lookahead.size() ) return false;
-        if ( !lookahead.containsAll( o.lookahead ) ) return false;
-        if ( terms.size() != o.terms.size() ) return false;
-        if ( !terms.containsAll( o.terms ) ) return false;
+        if ( dot != o.dot )                             return false;
+        if ( lookahead.size() != o.lookahead.size() )   return false;
+        if ( !lookahead.containsAll( o.lookahead ) )    return false;
+        if ( terms.size() != o.terms.size() )           return false;
+        if ( !terms.containsAll( o.terms ) )            return false;
 
 
         return true;

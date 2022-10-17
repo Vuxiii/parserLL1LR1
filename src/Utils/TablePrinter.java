@@ -7,6 +7,15 @@ public class TablePrinter {
     private List< String[] > table = new LinkedList<>();
     private int cols = -1;
     private String sep = "|";
+    private String title = "";
+
+    public void addTitle( String title ) {
+        this.title = title;
+    }
+
+    public void push( String[] row ) {
+        addLast( row );
+    } 
 
     public void addLast( String[] row ) {
         table.add( row );
@@ -44,15 +53,43 @@ public class TablePrinter {
         int totalWidth = -sep.length();
         for ( Integer i : cellLength ) totalWidth += i + sep.length();
 
-        String s = "+" + "-".repeat( totalWidth ) + "+\n";
+        String s = "";
+        boolean padExtra = false;
+        int extraPad = 0;
+        // Add the title.
+        if ( title.length() != 0 ) {
+            if ( title.length() > totalWidth ) {
+                padExtra = true;
+                extraPad = title.length() - totalWidth;
+                totalWidth = title.length();                
+            } 
+            s += "+" + "-".repeat( totalWidth ) + "+\n";
+            s += "|" + title + " ".repeat(totalWidth - title.length()) + "|\n";
+        }
+
+        s += "+" + "-".repeat( totalWidth ) + "+\n";
 
         for ( int row = 0; row < table.size(); ++row ) {
-
-            s += getRow( row, cellLength ) + "\n";
+            if ( padExtra ) {
+                String a = getRow( row, cellLength ); 
+                int lenSoFar = a.length() - sep.length();
+                int remainingPadding = 1 + totalWidth - lenSoFar; // +1 from the removed above
+                
+                s += a.substring( 0, lenSoFar ); // Remove the seperator from the end of it
+                s += " ".repeat( remainingPadding ) + sep + "\n"; // Add the padding and the seperator back in.
+            } else 
+                s += getRow( row, cellLength ) + "\n";
             if ( row + 1 < table.size() ) {
                 s += "|";
-                for ( int i = 0; i < cols; ++i )
-                    s += "-".repeat( cellLength[i]) + ( i+1 < cols ? "+" : "|" );
+                for ( int i = 0; i < cols; ++i ) {
+                    int dashes = cellLength[i];
+                    if ( padExtra && i+1 == cols ) dashes += extraPad;
+
+                    s += "-".repeat( dashes );
+
+                    // Add either '+' or a '|'. If it is the last column in the table, add the latter.
+                    s += ( i+1 < cols ? "+" : "|" );
+                }
                 s += "\n";
             }
             

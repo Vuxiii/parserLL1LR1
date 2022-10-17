@@ -21,23 +21,16 @@ public class LRParser {
 
     private static void _printStates( Grammar g, LRState state, Set<LRState> visited ) {
         visited.add( state );
-        System.out.println( state );
+        System.out.println( state.toString() + "\n" );
 
         for ( Term move : state.move_to_state.keySet() ) {
             LRState ste = state.move_to_state.get( move );
-            // System.out.println( "Move " + move );
-            // System.out.println( "State\n" + ste );
             if ( ste != null && !visited.contains( ste ) ) {
-                System.out.println( "Making move " + move + " from");
-                System.out.println( state );
-                System.out.println( "to");
+                
                 _printStates( g, ste, visited );
-            }
-            
+            }       
         }
-            
-
-    } 
+    }
 
     /**
      * Computes the initial start state
@@ -45,72 +38,59 @@ public class LRParser {
      * @param start The of the CFG
      * @return The start state
      */
-    private static LRState _computeState( Grammar g, NonTerminal start ) {
+    private static LRState _computeState( Grammar g, NonTerminal start ) {      
         
         LRState ste = new LRState();
 
-        for ( LRRule r : g.get_rule( start ) ) {
-            System.out.println( "adding rule " + r + " to start");
+        for ( LRRule r : g.get_rule( start ) )
             ste.add( start, r );
-
-        }
 
         _computeClosure( ste, g );
 
         // Cache the resulting state, so it can be used for loops.
-
         g.cache( ste );
 
         for ( Term move : ste.getMoves() ) {
             if ( move.equals( Rule.EOR ) ) continue;
-            // System.out.println( "-".repeat( 20 ) );
+        
             LRState ns = _computeState( ste, move, g );
             g.cache( ns );
             ste.move_to_state.put( move, ns );
-            // System.out.println( "-".repeat( 20 ) );
             
         }
-
         return ste;
     }
 
+    /**
+     * This method computes the closure for the given state.
+     * @param state The state in which to compute the closure.
+     * @param g The grammar for the language.
+     */
     private static void _computeClosure( LRState state, Grammar g ) {
-        
-
         List< NonTerminal > addQueue = new LinkedList<>();
-        // Set<Term> visited = new HashSet<>();
-
+        
         addQueue.addAll( state.rules.keySet() );
-
+        
         while ( !addQueue.isEmpty() ) {
-            // System.out.println( "Size of queue is " + addQueue.size() );
             NonTerminal X = addQueue.remove(0);
-            // if ( visited.contains(X) ) continue;
-            // visited.add( X );
-            
+        
             List<LRRule> rules = state.get_rule( X );
-            // System.out.println( rules );
-            // System.out.println( X + " has " + rules.size() + " rules -> " + rules );
+            
             for ( int i = 0; i < rules.size(); ++i ) {
                 LRRule rule = rules.get( i );
                 
                 int dotPos = rule.dot;
-
-                // System.out.println( "Looking at rule[" + i + "]:\n" + X + " -> " + rule.terms );
+    
+                if ( dotPos >= rule.size() ) continue;
                 
-                if ( dotPos < rule.size() ) {
-                    Term t = rule.get_term( dotPos );
-                    if ( t instanceof NonTerminal ) {
-                        for ( LRRule r : g.get_rule( (NonTerminal) t ) ) {
-                            if ( !state.containedRules.contains( r ) ) {
-                                // System.out.println( "Adding rule: " + r + " to " + t);
-
-                                state.add( (NonTerminal) t, r );
-                                addQueue.add( (NonTerminal) t );
-                                
-                            }
-                        }
-                    }
+                Term t = rule.get_term( dotPos );
+                if ( !(t instanceof NonTerminal) ) continue;
+                
+                for ( LRRule r : g.get_rule( (NonTerminal) t ) ) {
+                    if ( state.containedRules.contains( r ) ) continue;
+                    
+                    state.add( (NonTerminal) t, r );
+                    addQueue.add( (NonTerminal) t );
                 }
             }
         }
@@ -124,17 +104,13 @@ public class LRParser {
      * @return The state arrived at by traversing with the given "move" from the given "state"
      */
     private static LRState _computeState( LRState from, Term move, Grammar g ) {
-        
-        // System.out.println( "\twith move " + move );
-        // System.out.println( from );
-
         // (1) Collect all the rules where you can make the move.
         // (2) Generate a new state with these new rules
         // (3) and compute the closure. 
         // (4) * Repeat.
         Map<NonTerminal, List<LRRule> > mapper = new HashMap<>();
         
-        // (1)
+        // (1) Collect the rules where "move" can be made from the previous state.
         for ( NonTerminal X : from.rules.keySet() ) {
             for ( LRRule rule : from.rules.get( X ) ) {
                 if ( rule.get_dot_item().name.equals( move.name ) )
@@ -142,65 +118,44 @@ public class LRParser {
             }
         }
 
-        // System.out.println( mapper );
-
-
-        // (2)
-        // System.out.println( "(2)" );
+        // (2) Generate the new state, and insert all the rules from the original state 
+        //      and progress them by one.
         LRState ste = new LRState();
-
+        
         for ( NonTerminal X : mapper.keySet() ) {
-            // System.out.println( "Looking at rule " + X );
             for ( LRRule r : mapper.get( X ) ) {
                 LRRule rule = new LRRule( r.terms, r.lookahead );
                 rule.dot = r.dot+1;
                 ste.add( X, rule );
-                
             }
         }
-        // System.out.println( "New state:" );
-        // System.out.println( ste );
 
-        // (3)
-        // System.out.println( "(3)" );
+        // (3) Compute the closure for this state.
         _computeClosure( ste, g );
-        // System.out.println( "After closure:" );
-        // System.out.println( ste );
-        // for ( LRRule r : ste.containedRules ) 
-        //     System.out.println( "ASD " +  r );
-        LRState ns = g.checkCache(Utils.toList( ste.containedRules ) );
-        if ( ns == null )
-            g.cache( ste );
-        else {
-            // System.out.println( "FOUND A DUPLICATE STATE\n" + ns);
-            return ns;
-        }
+
+        // Check if this state already has been made. If it has, just return it.
+        // Prevents infinite recursion on loops.
+        LRState ns = g.checkCache( Utils.toList( ste.containedRules ) );
         
-        // (4)
+        if ( ns != null ) return ns; // We have already seen this state before. Just return it.
+        
+        // This state has not been seen before, therefore cache it, and compute the new states from this state.
+        g.cache( ste );
 
-        // System.out.print( "(4) " );
+        // (4) Generate the new states by making each move available from this newly created state.
         for ( Term new_move : ste.getMoves() ) {
-            if ( new_move.equals( Rule.EOR ) ) continue;
-            if ( new_move instanceof Terminal && ((Terminal) new_move).is_EOP ) continue;
-            // System.out.println( new_move );
-            // System.out.println( "-".repeat( 20 ) );
-
-            // ns = g.checkCache( Utils.toList( ste.containedRules ) );
-            if ( ns == null ) ns = _computeState( ste, new_move, g );
-            // System.out.println( "adding edge " );
-            // System.out.println( ste );
-            // System.out.println( "With move " + new_move );
-            // System.out.println( "TO" );
-            // System.out.println( ns );
-            ste.move_to_state.put( new_move, ns );
-            ns = null;
-            // System.out.println( "-".repeat( 20 ) );
+            if ( new_move.equals( Rule.EOR ) ) { /*System.out.println( "Found EOR" );*/ continue; } // End of Rule
+            if ( new_move instanceof Terminal && ((Terminal) new_move).is_EOP ) { /*System.out.println( "Found EOP" );*/ continue; }// End of Parse $
             
+            ste.move_to_state.put( new_move, _computeState( ste, new_move, g ) );
         }
 
         return ste;
     }
 
+    /**
+     * Provides a sample CFG to be parsed.
+     */
     public static void LRSample() {
         {
             NonTerminal S = new NonTerminal( "S" );
