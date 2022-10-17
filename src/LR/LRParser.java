@@ -14,12 +14,9 @@ public class LRParser {
 
     public static void parse( Grammar g, NonTerminal start ) {
 
-        // Set<NonTerminal> nulls = compute_null( g );
-        // Map<NonTerminal, Set<Terminal> > firsts = compute_first( g, nulls );
-
-        LRState state1 = _computeState( g, start );
+        LRState start_state = _computeState( g, start );
         
-        _printStates( g, state1, new HashSet<>() );
+        _printStates( g, start_state, new HashSet<>() );
 
     }
 
@@ -34,116 +31,6 @@ public class LRParser {
                 _printStates( g, ste, visited );
             }       
         }
-    }
-
-
-    public static Set<NonTerminal> compute_null( Grammar g ) {
-
-        Set<NonTerminal> nulls = new HashSet<>();
-        int size;
-        do {
-            size = nulls.size();
-
-            for ( NonTerminal N : g.LRRules.keySet() ) {
-                // if ( nulls.size() == size ) break; // Nothing changed 
-                
-                List<LRRule> rules_for_N = g.get_rule( N );
-                for ( LRRule rule : rules_for_N ) {
-                    // System.out.println( "\nChecking NonTerm " + N + " -> " + rule.rules );
-                    int i = 0;
-
-                    // Removes all the first NULLS.
-                    while ( i < rule.size() && ((rule.terms.get( i ) instanceof Terminal && ((Terminal) rule.terms.get( i )).is_epsilon)
-                            || nulls.contains( rule.terms.get( i ) )) ) {
-                        // System.out.println( rule.terms.get( i ) + " is nullable.");
-                        ++i;
-                    }  
-                    
-                    if ( i == rule.size() ) {
-                        nulls.add( N );
-                    }
-    
-                }
-            }
-
-        } while ( size != nulls.size() );
-        
-
-        return nulls;
-    }
-
-    public static Map< NonTerminal, Set<Terminal> > compute_first( Grammar g, Set<NonTerminal> nulls ) {
-
-        Map< NonTerminal, Set<Terminal> > firsts = new HashMap<>();
-
-        for ( NonTerminal N : g.LRRules.keySet() ) 
-            firsts.put( N, new HashSet<>() );
-
-        int size;
-        do {
-            size = firsts.values().parallelStream().map( li -> li.size() ).reduce(0, Integer::sum);
-            
-
-            // System.out.println( "-".repeat(20) );
-            
-            // firsts.forEach( (k, v) -> System.out.println( "First(" + k + ") = {" + v + "}" ) );
-
-            // System.out.println( "-".repeat(20) );
-            
-            for ( NonTerminal N : g.LRRules.keySet() ) {
-                for ( LRRule r : g.LRRules.get( N ) ) {
-                    // System.out.println( "\nChecking NonTerm " + N + " -> " + r.terms );
-                    int i = 0;
-                    Term current = r.terms.get(i);
-                    if ( current instanceof Terminal ) {
-                        // Ignore epsilons.
-                        if ( ((Terminal) current).is_epsilon ) continue;
-
-                        // System.out.println( "First(" + N + ") += {" + current + "}\t\tBy rule 1 (is terminal)");
-                        firsts.get( N ).add( (Terminal) current );
-                        // firsts.merge( N, Utils.toSet( (Terminal) current ), (n, o) -> { 
-                        //     System.out.println( "{" + o + "} -> {" + n + "}" );
-                            
-                        //     o.addAll( n ); return o; } );
-                    } else {
-                        boolean addNext = true; //current instanceof NonTerminal && 
-                        while( addNext ) { // We know it is a NonTerminal from above.
-                            
-                            if ( current instanceof NonTerminal ){
-                                // System.out.println( "First(" + N + ") += First(" + current + ") = " + firsts.getOrDefault( (NonTerminal) current, Utils.toSet()) + "\tBy rule 2 (Prev were nullable. Current = " + current+ ")");
-                                
-                                firsts.get( N ).addAll( firsts.get( (NonTerminal) current ) );
-
-                                // firsts.merge( N, firsts.getOrDefault( (NonTerminal) current, Utils.toSet()), (n, o) -> { 
-                                    
-                                //     System.out.println( "{" + o + "} -> {" + n + "}" );
-                                //     o.addAll( n ); return o; } );
-                                
-
-                                addNext = nulls.contains( (NonTerminal) current );
-                            } else {
-                                // System.out.println( "First(" + N + ") += {" + current + "}\t\tBy rule 1 (is terminal)");
-                                firsts.get( N ).add( (Terminal) current );
-                                // firsts.merge( N, Utils.toSet( (Terminal) current ), (n, o) -> { 
-                                //     System.out.println( "{" + o + "} -> {" + n + "}" );
-                                //     o.addAll( n ); return o; } );
-
-                                addNext = false;
-                            }
-                            
-                            
-                            i++;
-                            current = i < r.size() ? r.terms.get( i ) : null;
-                            addNext = addNext && current != null;
-                        }   
-                    }
-                }
-            }
-        } while( size != firsts.values().parallelStream().map( li -> li.size() ).reduce(0, Integer::sum) );
-
-
-        return firsts;
-
     }
 
     /**
@@ -218,24 +105,24 @@ public class LRParser {
                 // Add the lookahead from looking at the current rule
                 if ( rule.dot+1 < rule.size() ) {
                     Term lahead = rule.terms.get( rule.dot + 1 );
-                    if ( rule.get_dot_item() instanceof NonTerminal ) {
+                    if ( rule.get_dot_item() instanceof NonTerminal )
                         getLookahead.get( rule.get_dot_item() ).add( lahead );
-                    }
+                    
                 } else { // Add the lookahead from the Productions ruleset.
                     if ( getLookahead.containsKey( X ) ) {
                         Set<Term> lahead = getLookahead.get( X );
-                        if ( rule.get_dot_item() instanceof NonTerminal ) {
+                        if ( rule.get_dot_item() instanceof NonTerminal )
                             getLookahead.get( rule.get_dot_item() ).addAll( lahead );
-                        }   
+                        
                     }
                 }
                
                 // Add the found lookaheads.
                 Term t = rule.get_dot_item();
                 if ( !(t instanceof NonTerminal) ) continue;
-                for ( LRRule r : g.get_rule( (NonTerminal) t ) ) {
+                for ( LRRule r : g.get_rule( (NonTerminal) t ) ) 
                     r.lookahead.addAll( getLookahead.get( t ) );
-                }                
+                 
             }
         }
     }

@@ -13,41 +13,25 @@ public class Grammar {
     
     Map< NonTerminal, List<LRRule> > LRRules;
 
-    // Map< List<LRRule>, LRState > state_cache;
     List<LRState> state_cache;
 
     public Grammar() {
         LRRules = new HashMap<>();
         state_cache = new ArrayList<>();
-        // state_cache = new HashMap<>();
     }
 
     public void cache( LRState state ) {
-        // Check for dot
-        // Check for lookahead
-        // Check for terms
-        // CHeck for num of rules
         if ( state != null )
             state_cache.add( state );
-        // state_cache.put( state.get_rule(null), state );
-
     }
 
     public LRState checkCache( List<LRRule> rules ) {
-        // System.out.println( "Size of cache " + state_cache.size() );
-        // System.out.println( "Checking for:\t" + rules);
         for ( LRState state : state_cache ) {
             List<LRRule> li = new ArrayList<>();
-            // System.out.println( state );
             li.addAll( state.containedRules );
 
-            // System.out.println( "Checking:\t" + li );
-
-            // if ( li.size() != rules.size() ) continue;
-            if ( li.containsAll( rules ) ) return state;
-            
+            if ( li.containsAll( rules ) ) return state;    
         }
-        // System.out.println( "Didnt find it." );
         return null;
     }
 
