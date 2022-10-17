@@ -2,7 +2,7 @@ package src.LR;
 
 public class NonTerminal extends Term {
     public NonTerminal( String n ) {
-        name = n;
+        super( n );
     }
     
 

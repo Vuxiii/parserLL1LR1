@@ -1,23 +1,104 @@
 package src.LR;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import src.Utils.Utils;
 
 public class LRParser {
     
 
-    public static void parse( Grammar g, NonTerminal start ) {
+    public static LRState parse( Grammar g, NonTerminal start ) {
 
         LRState start_state = _computeState( g, start );
         
-        _printStates( g, start_state, new HashSet<>() );
+        // _printStates( g, start_state, new HashSet<>() );
 
+        List<ParserState> table = getParserTable( g, start_state );
+        
+        // ParserState ns = index.eat( Term.get( "x" ) );
+        // if ( ns instanceof ParserStateError ) 
+        //     System.out.println( ns.errorMsg );
+        // else
+        //     System.out.println( "\n\n\n\nArrived at\n" + ns.current_state );
+
+        // In state 1
+
+        // Reading x :-> ParserState newState = acc.get( x ).accept( oldState );
+
+
+
+        return start_state;
+
+    }
+
+    public static List<ParserState> getParserTable( Grammar g, LRState start ) {
+        return _getParserTable( g, new ParserState( start, null ) );
+    }
+
+    private static List<ParserState> _getParserTable( Grammar g, ParserState index ) {
+        
+        List<ParserState> output = new ArrayList<>();        
+
+        List<ParserState> queue = new LinkedList<>();
+        Set<Integer> visited = new HashSet<>();
+
+        queue.add( index );
+
+        while ( queue.size() > 0 ) {
+            ParserState current = queue.remove( 0 );
+            output.add( current );
+            LRState state = current.current_state; 
+            visited.add( state.id );
+
+            System.out.println( "Visiting\n" + state );
+
+            // Set up the fails. The actual eatable will overwrite these.
+            g.terms().forEach(   t -> current.addError( t, "The Term '" + t + "' Connot be accepted from the given state\n" + state ) );
+            g.nonTerms().forEach(t -> current.addError( t, "The Term '" + t + "' Connot be accepted from the given state\n" + state ) );
+
+
+
+            for ( Term t : state.move_to_state.keySet() ) {
+                if ( t == Rule.EOR || t == Rule.EOP ) continue; // This should remove (1)
+
+                LRState to_state = state.move_to_state.get( t );
+                
+                if ( to_state == null ) continue; // (1)
+    
+                ParserState move = new ParserState( to_state, t );
+    
+                System.out.println( "To state id: " + to_state.id );
+                
+                
+                // Here we can add whatever code we want. This will be executed when we move from one state to another.
+                current.addMove( t, ( ParserState oldState ) -> { 
+                    // We have access to 
+                    //  * oldState  = fromState
+                    //  * move      = toState 
+                    //  * t         = usedTerm
+                    
+                    // System.out.println( "Made move " + t + " from" );
+                    // System.out.println( oldState.current_state );
+                    // System.out.println( "And arrived at" );
+                    // System.out.println( move.current_state );
+                    return move; 
+                } );
+
+                if ( !visited.contains( to_state.id ) )
+                    queue.add( move );
+            }
+
+        }
+
+
+        return output;
     }
 
     private static void _printStates( Grammar g, LRState state, Set<LRState> visited ) {

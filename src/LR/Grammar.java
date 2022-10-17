@@ -12,11 +12,12 @@ import src.Utils.Utils;
 public class Grammar {
     
     Map< NonTerminal, List<LRRule> > LRRules;
-
+    Map<String, Term> terms;
     List<LRState> state_cache;
 
     public Grammar() {
         LRRules = new HashMap<>();
+        terms = new HashMap<>();
         state_cache = new ArrayList<>();
     }
 
@@ -24,6 +25,8 @@ public class Grammar {
         if ( state != null )
             state_cache.add( state );
     }
+
+
 
     public LRState checkCache( List<LRRule> rules ) {
         for ( LRState state : state_cache ) {
@@ -57,6 +60,7 @@ public class Grammar {
 
     public void add_rule( NonTerminal key, List<Term> rule ) {
         LRRules.merge( key, Utils.toList( new LRRule( rule, Utils.toSet() ) ), (o, n) -> { o.addAll( n ); return o; } );
+        
     }
 
     public List<LRRule> get_rule( NonTerminal key ) {

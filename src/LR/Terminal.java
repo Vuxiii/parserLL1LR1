@@ -4,12 +4,12 @@ public class Terminal extends Term {
     boolean is_epsilon = false;
     public boolean is_EOP = false;
     public Terminal() {
+        super( "" );
         is_epsilon = true;
-        name = "";
     }
 
     public Terminal( String n ) {
-        name = n;
+        super( n );
     }
 
     // public boolean equals( Object other ) {
