@@ -57,7 +57,7 @@ public class LRParser {
             LRState state = current.current_state; 
             visited.add( state.id );
 
-            System.out.println( "Visiting\n" + state );
+            // System.out.println( "Visiting\n" + state );
 
             // Set up the fails. The actual eatable will overwrite these.
             g.terms().forEach(   t -> current.addError( t, "The Term '" + t + "' Connot be accepted from the given state\n" + state ) );
@@ -74,7 +74,7 @@ public class LRParser {
     
                 ParserState move = new ParserState( to_state, t );
     
-                System.out.println( "To state id: " + to_state.id );
+                // System.out.println( "To state id: " + to_state.id );
                 
                 
                 // Here we can add whatever code we want. This will be executed when we move from one state to another.
