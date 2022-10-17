@@ -12,15 +12,15 @@ public class Terminal extends Term {
         name = n;
     }
 
-    public boolean equals( Object other ) {
-        if ( other == null ) return false;
-        if ( !(other instanceof Terminal) ) return false;
-        Terminal o = (Terminal) other;
-        if ( !name.equals(o.name) ) return false;
-        if ( is_epsilon != o.is_epsilon ) return false;
+    // public boolean equals( Object other ) {
+    //     if ( other == null ) return false;
+    //     if ( !(other instanceof Terminal) ) return false;
+    //     Terminal o = (Terminal) other;
+    //     if ( !name.equals(o.name) ) return false;
+    //     if ( is_epsilon != o.is_epsilon ) return false;
 
-        return true;
-    }
+    //     return true;
+    // }
 
     public String toString() {
         return (is_epsilon ? "€" : name);

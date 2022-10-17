@@ -72,7 +72,7 @@ public class Grammar {
     }
 
     public void add_rule( NonTerminal key, List<Term> rule ) {
-        LRRules.merge( key, Utils.toList( new LRRule( rule, Utils.toList() ) ), (o, n) -> { o.addAll( n ); return o; } );
+        LRRules.merge( key, Utils.toList( new LRRule( rule, Utils.toSet() ) ), (o, n) -> { o.addAll( n ); return o; } );
     }
 
     public List<LRRule> get_rule( NonTerminal key ) {

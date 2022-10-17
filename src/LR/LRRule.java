@@ -1,16 +1,20 @@
 package src.LR;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class LRRule extends Rule {
     int dot = 0;
-    List<Term> lookahead = new ArrayList<>();
+    Set<Term> lookahead = new HashSet<>();
 
-    public LRRule( List<Term> terms, List<Term> lookahead ) {
+    public LRRule( List<Term> terms, Set<Term> lookahead ) {
         super( terms );
         this.lookahead = lookahead;
     }
+
+    
 
     public Term get_dot_item() {
         return dot < size() ? terms.get( dot ) : Rule.EOR;
