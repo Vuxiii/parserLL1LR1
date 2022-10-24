@@ -43,4 +43,6 @@ public class ParserState {
     public ParserState eat( Term t ) {
         return accepter.get( t ).apply( this );
     }
+
+
 }

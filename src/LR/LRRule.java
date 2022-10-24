@@ -1,20 +1,40 @@
 package src.LR;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import src.Utils.Utils;
 
 public class LRRule extends Rule {
-    int dot = 0;
+    private static int count = 0;
+    final int id;
+    final int dot;
     Set<Term> lookahead = new HashSet<>();
 
     public LRRule( List<Term> terms, Set<Term> lookahead ) {
         super( terms );
         this.lookahead = lookahead;
+        id = count++;
+        dot = 0;
     }
 
-    
+    public LRRule( List<Term> terms, Set<Term> lookahead, int dot, int id ) {
+        super( terms );
+        this.lookahead = lookahead;
+        this.id = id;
+        this.dot = dot;
+    }
+
+    public void lock() {
+        
+        terms = Collections.unmodifiableList( terms );
+        lookahead = Collections.unmodifiableSet( lookahead );
+        // Collectors.toList()
+    }
 
     public Term get_dot_item() {
         return dot < size() ? terms.get( dot ) : Rule.EOR;
@@ -40,6 +60,12 @@ public class LRRule extends Rule {
         s += terms + " :-> " + lookahead;
 
         return s;
+    }
+
+    public LRRule copy() { // What should dot be????? dot or 0
+
+        return new LRRule( Utils.toList( terms ) , Utils.toSet( lookahead ), dot, id );
+
     }
 }
 

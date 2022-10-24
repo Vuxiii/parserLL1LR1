@@ -12,6 +12,8 @@
 // import src.Utils.TablePrinter;
 // import src.Utils.Utils;
 // import src.LL.LLParser;
+import java.util.List;
+
 import src.LR.*;
 
 public class App {
@@ -20,6 +22,7 @@ public class App {
         LRParser.LRSample();
         // LLParser.LLSample();
 
+        
     }
 
     

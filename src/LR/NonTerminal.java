@@ -1,10 +1,17 @@
 package src.LR;
 
 public class NonTerminal extends Term {
+    final boolean is_start;
+
     public NonTerminal( String n ) {
         super( n );
+        is_start = false;
     }
     
+    public NonTerminal( String n, boolean isStart ) {
+        super( n );
+        is_start = isStart;
+    }
 
     // public boolean equals( Object other ) {
     //     if ( other == null ) return false;

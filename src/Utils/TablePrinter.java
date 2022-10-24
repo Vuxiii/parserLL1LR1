@@ -5,7 +5,7 @@ import java.util.List;
 public class TablePrinter {
 
     private List< String[] > table = new LinkedList<>();
-    private int cols = -1;
+    private int cols = 0;
     private String sep = "|";
     private String title = "";
 
@@ -46,6 +46,7 @@ public class TablePrinter {
         for ( String[] ss : table ) {
             for ( int i = 0; i < ss.length; ++i ) {
                 String s = ss[i];
+                if ( s == null ) s = "";
                 cellLength[i] = Math.max( s.length(), cellLength[i] );
             }
         }
@@ -104,6 +105,7 @@ public class TablePrinter {
 
         for ( int i = 0; i < cols; ++i ) {
             String text = table.get(row)[i];
+            if ( text == null ) text = "";
             int padding = cellLength[i] - text.length();
 
             s += text + " ".repeat( padding ) + ( i+1 < cols ? sep : "" );

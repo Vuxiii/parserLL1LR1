@@ -20,6 +20,10 @@ public class Term {
         return terms.get( term );
     }
 
+    public static int size() {
+        return (int) terms.values().parallelStream().filter( t -> !(t == Rule.EOP || t == Rule.EOR) ).count();
+    }
+
     // public boolean equals( Object other ) {
     //     if ( other == null ) return false;
     //     if ( !(other instanceof Term) ) return false;

@@ -3,6 +3,9 @@ package src.LR;
 public class Terminal extends Term {
     boolean is_epsilon = false;
     public boolean is_EOP = false;
+    /**
+     * This constructor makes an Epsilon terminal
+     */
     public Terminal() {
         super( "" );
         is_epsilon = true;

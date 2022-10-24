@@ -1,23 +1,28 @@
 package src.LR;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import src.Utils.Utils;
 
 public class Grammar {
     
     Map< NonTerminal, List<LRRule> > LRRules;
-    Map<String, Term> terms;
+    // Map<String, Term> terms;
     List<LRState> state_cache;
+
+
 
     public Grammar() {
         LRRules = new HashMap<>();
-        terms = new HashMap<>();
+        // terms = new HashMap<>();
         state_cache = new ArrayList<>();
     }
 
@@ -26,7 +31,9 @@ public class Grammar {
             state_cache.add( state );
     }
 
-
+    // public int size() {
+    //     return terms.keySet().size();
+    // }
 
     public LRState checkCache( List<LRRule> rules ) {
         for ( LRState state : state_cache ) {
@@ -59,11 +66,31 @@ public class Grammar {
     }
 
     public void add_rule( NonTerminal key, List<Term> rule ) {
-        LRRules.merge( key, Utils.toList( new LRRule( rule, Utils.toSet() ) ), (o, n) -> { o.addAll( n ); return o; } );
+        LRRules.merge( key, Utils.toList( new LRRule( Utils.toList( rule ), Utils.toSet() ) ), (o, n) -> { o.addAll( n ); return o; } );
         
     }
 
     public List<LRRule> get_rule( NonTerminal key ) {
-        return LRRules.get( key );
+        return LRRules.get( key ).stream().map( r -> r.copy() ).collect( Collectors.toList() );
+    }
+
+    public String toString() {
+        String s = "";
+
+        List<String[]> rules = new ArrayList<>();
+        for ( NonTerminal X : LRRules.keySet() ) {
+            for ( LRRule rule : LRRules.get( X ) ) {
+                s = "";
+                for ( Term t : rule.terms )
+                    s += t;
+                rules.add( new String[] { "" + rule.id, "] " + X + " -> " + s } );
+            }
+        }
+        
+        s = "";
+        rules.sort( Comparator.comparing( ss -> Integer.parseInt( ss[0] ) ) );
+        for ( String[] ss : rules )
+            s += ss[0] + ss[1] + "\n";
+        return s;
     }
 }
