@@ -165,6 +165,12 @@ public class LRParser {
         g.nonTerms().forEach( t -> getLookahead.put( t, Utils.toSet() ) ); // Fill it with empty lookahead to avoid null.
         addQueue.addAll( state.rules.keySet() );
         
+        // add the lookaheads that should be inherited to the rules added from the closure.
+        // Map<NonTerminal, LRRule> inheritLookaheads = new HashMap<>();
+
+        // state.rules.forEach( (LRRule rule) -> inheritLookaheads.put( ));
+        
+
         // List<LRRule> rules_to_add = new ArrayList<>();
         // List<NonTerminal> terms_to_add = new ArrayList<>();
 
@@ -181,10 +187,14 @@ public class LRParser {
                 Term t = rule.get_dot_item();
                 if ( t instanceof Terminal ) continue;
                 // System.out.println( addQueue.size() );
+                
                 for ( LRRule r : g.get_rule( (NonTerminal) t ) ) {
                     if ( state.containedIDRules.contains( new LRRuleIdentifier( r.id, r.dot ) ) ) continue;
                     // System.out.println( state.containedIDRules.size() );
-                    r.lookahead.clear();
+                    System.out.println( "\t\tAdding lookahead with " + rule.lookahead );
+                    // r.lookahead.clear();
+                    r.lookahead.addAll( rule.lookahead );
+                    r.lookahead.remove( Term.QUESTION );
                     state.add( (NonTerminal) t, r );
                     // rules_to_add.add( new LRRule( Utils.toList( r.terms ), Utils.toSet( r.lookahead ), 0, r.id ) );
                     // terms_to_add.add( (NonTerminal) t );
@@ -314,27 +324,27 @@ public class LRParser {
      * 
      */
     public static void LRSample() {
-        {
-            NonTerminal S = new NonTerminal( "S", true );
-            NonTerminal E = new NonTerminal( "E" );
-            NonTerminal T = new NonTerminal( "T" );
+        // {
+        //     NonTerminal S = new NonTerminal( "S", true );
+        //     NonTerminal E = new NonTerminal( "E" );
+        //     NonTerminal T = new NonTerminal( "T" );
     
-            Terminal dollar = new Terminal( "$" );
-            dollar.is_EOP = true;
-            Terminal plus = new Terminal( "+" );
-            Terminal x = new Terminal( "x" );
+        //     Terminal dollar = new Terminal( "$" );
+        //     dollar.is_EOP = true;
+        //     Terminal plus = new Terminal( "+" );
+        //     Terminal x = new Terminal( "x" );
     
-            Grammar g = new Grammar();
+        //     Grammar g = new Grammar();
     
-            g.add_rule( S, List.of( E, dollar ) );
+        //     g.add_rule( S, List.of( E, dollar ) );
             
-            g.add_rule( E, List.of( T, plus, E ) );
-            g.add_rule( E, List.of( T ) );
+        //     g.add_rule( E, List.of( T, plus, E ) );
+        //     g.add_rule( E, List.of( T ) );
     
-            g.add_rule( T, List.of( x ) );
+        //     g.add_rule( T, List.of( x ) );
     
-            LRParser.parse( g, S );
-        }
+        //     LRParser.parse( g, S );
+        // }
 
         // {
         //     NonTerminal S_ = new NonTerminal( "S'", true );
@@ -465,27 +475,40 @@ public class LRParser {
         //     // +------------------------+
         // }
 
-        // {
-        //     NonTerminal S = new NonTerminal( "S", true );
-        //     NonTerminal E = new NonTerminal( "E" );
+        {
+            NonTerminal S = new NonTerminal( "S", true );
+            NonTerminal E = new NonTerminal( "E" );
 
-        //     Terminal dollar = new Terminal( "$" );
-        //     dollar.is_EOP = true;
-        //     Terminal plus = new Terminal( "+" );
-        //     Terminal id = new Terminal( "id" );
-        //     Terminal lparen = new Terminal( "(" );
-        //     Terminal rparen = new Terminal( ")" );
+            Terminal dollar = new Terminal( "$" );
+            dollar.is_EOP = true;
+            Terminal plus = new Terminal( "+" );
+            Terminal id = new Terminal( "id" );
+            Terminal lparen = new Terminal( "(" );
+            Terminal rparen = new Terminal( ")" );
             
-        //     Grammar g = new Grammar();
+            Grammar g = new Grammar();
     
-        //     g.add_rule( S, List.of( E, dollar ) );
+            g.add_rule( S, List.of( E, dollar ) );
             
-        //     g.add_rule( E, List.of( id ) );
-        //     g.add_rule( E, List.of( id, lparen, E, rparen ) );
-        //     g.add_rule( E, List.of( E, plus, id ) );
+            g.add_rule( E, List.of( id ) );
+            g.add_rule( E, List.of( id, lparen, E, rparen ) );
+            g.add_rule( E, List.of( E, plus, id ) );
     
-        //     LRParser.parse( g, S );
-        // }
+            LRParser.parse( g, S );
+        }
     }
+
+    // https://serokell.io/blog/how-to-implement-lr1-parser
+    // For each position in the starting set, 
+    // if its locus contains a terminal or is empty, 
+    // no new positions are added to the state. 
+    // If it is a non-terminal, 
+    // then all starting positions of that terminal are added to the set, 
+    // with their lookahead set changed to the FIRST(Next), 
+    // where Next is the point that follows the locus in the position. 
+    // If nothing follows the locus, 
+    // the the lookahead set becomes FOLLOW(Entity) instead, 
+    // where Entity is the output non-terminal of the rule.
+
         
 }

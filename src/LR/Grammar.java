@@ -74,6 +74,16 @@ public class Grammar {
         return LRRules.get( key ).stream().map( r -> r.copy() ).collect( Collectors.toList() );
     }
 
+    public Set<Term> get_firsts( NonTerminal X ) {
+
+
+        return null;
+    }
+
+    public Set<Term> get_follows( NonTerminal X ) {
+        return null;
+    }
+
     public String toString() {
         String s = "";
 
