@@ -13,20 +13,23 @@ public class LRRule extends Rule {
     private static int count = 0;
     final int id;
     final int dot;
+    final NonTerminal X;
     Set<Term> lookahead = new HashSet<>();
 
-    public LRRule( List<Term> terms, Set<Term> lookahead ) {
+    public LRRule( NonTerminal X, List<Term> terms, Set<Term> lookahead ) {
         super( terms );
         this.lookahead = lookahead;
         id = count++;
         dot = 0;
+        this.X = X;
     }
 
-    public LRRule( List<Term> terms, Set<Term> lookahead, int dot, int id ) {
+    public LRRule( NonTerminal X, List<Term> terms, Set<Term> lookahead, int dot, int id ) {
         super( terms );
         this.lookahead = lookahead;
         this.id = id;
         this.dot = dot;
+        this.X = X;
     }
 
     public void lock() {
@@ -54,6 +57,10 @@ public class LRRule extends Rule {
         return true;
     }
 
+    public NonTerminal X() {
+        return X;
+    }
+
     public String toString() {
         String s = "";
 
@@ -64,8 +71,12 @@ public class LRRule extends Rule {
 
     public LRRule copy() { // What should dot be????? dot or 0
 
-        return new LRRule( Utils.toList( terms ) , Utils.toSet( lookahead ), dot, id );
+        return new LRRule( X, Utils.toList( terms ) , Utils.toSet( lookahead ), dot, id );
 
+    }
+
+    public Term get_after_dot() {
+        return dot +1 < size() ? terms.get( dot+1 ) : null;
     }
 }
 

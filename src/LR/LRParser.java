@@ -56,6 +56,7 @@ public class LRParser {
 
         while ( queue.size() > 0 ) {
             ParserState current = queue.remove( 0 );
+            if ( visited.contains( current.current_state.id ) ) continue;
             tbl.add( current );
             LRState state = current.current_state; 
             visited.add( state.id );
@@ -94,8 +95,12 @@ public class LRParser {
                     return move; 
                 } );
 
-                if ( !visited.contains( to_state.id ) )
+                if ( !visited.contains( to_state.id ) ) {
+                    // System.out.print( "Visited: [" );
+                    // visited.forEach( s -> System.out.print( s + " " ));
+                    // System.out.println("] doesn't contain state " + to_state.id);
                     queue.add( move );
+                }
             }
 
         }
@@ -154,8 +159,8 @@ public class LRParser {
      * @param g The grammar for the language.
      */
     private static void _computeClosure( LRState state, Grammar g ) {
-        System.out.println( "\t\tBefore closure");
-        System.out.println( state );
+        // System.out.println( "\t\tBefore closure");
+        // System.out.println( state );
         state.containedRules.forEach( r -> r.lock() );
         List< NonTerminal > addQueue = new LinkedList<>();
         
@@ -173,6 +178,9 @@ public class LRParser {
 
         // List<LRRule> rules_to_add = new ArrayList<>();
         // List<NonTerminal> terms_to_add = new ArrayList<>();
+        Map<Integer, LRRule> getCreatedState = new HashMap<>();
+        Map<NonTerminal, Set<Term>> addedLookaheads = new HashMap<>();
+        Map<NonTerminal, Set<LRRule>> addedRules = new HashMap<>();
 
         // compute the closure
         while ( !addQueue.isEmpty() ) {
@@ -189,74 +197,91 @@ public class LRParser {
                 // System.out.println( addQueue.size() );
                 
                 for ( LRRule r : g.get_rule( (NonTerminal) t ) ) {
-                    if ( state.containedIDRules.contains( new LRRuleIdentifier( r.id, r.dot ) ) ) continue;
-                    // System.out.println( state.containedIDRules.size() );
-                    System.out.println( "\t\tAdding lookahead with " + rule.lookahead );
-                    // r.lookahead.clear();
-                    r.lookahead.addAll( rule.lookahead );
-                    r.lookahead.remove( Term.QUESTION );
-                    state.add( (NonTerminal) t, r );
-                    // rules_to_add.add( new LRRule( Utils.toList( r.terms ), Utils.toSet( r.lookahead ), 0, r.id ) );
-                    // terms_to_add.add( (NonTerminal) t );
-                    // state.add( (NonTerminal) t, new LRRule( Utils.toList( r.terms ), Utils.toSet( r.lookahead ), 0, r.id ) ); // id should be 0, because it has been added by the closure.
+                    
+                    Set<Term> ts = g.get_firsts( rule, state );
+                    
+                    // We need to check if r.get_dot_item is NonTerminal. 
+                    // true -> We need to add whatever this has added to each other NEWLY added rule with the same X
 
-                    addQueue.add( (NonTerminal) t );
+                    if ( !state.containedIDRules.contains( new LRRuleIdentifier( r.id, r.dot ) ) ) { 
+                        // System.out.println( "Skipping " + r); continue; 
+                        // System.out.println( "(6)Adding " + ts + " to " + r.X + " -> " + r.terms );
+                        addedLookaheads.put( r.X, ts );
+                        r.lookahead.addAll( ts );
+                        state.add( (NonTerminal) t, r );
+                        addQueue.add( (NonTerminal) t );
+                        getCreatedState.put( state.id, r );
+
+                        addedRules.merge( r.X, Utils.toSet(r), (o, n) -> {o.addAll( n ); return o;} );
+                    } else {
+                        // System.out.println( "(6)Adding " + ts + " to " + getCreatedState.get( state.id ).X + " -> " + getCreatedState.get( state.id ).terms );
+                        getCreatedState.get( state.id ).lookahead.addAll( ts );
+                        addedLookaheads.get( getCreatedState.get( state.id ).X ).addAll( ts );
+                    }
                 }
             }
         }
+
+        // For each newly added Rule. (dot == 0)
+        // Ensure that each lookahead contains the same?
+
+        // addedLookaheads.forEach( (X, laheads) -> System.out.println( X + " should have " + laheads ) );
+        addedLookaheads.forEach( (X, laheads) -> addedRules.get( X ).forEach( r -> r.lookahead.addAll( laheads ) ) ); // Might break...
+
+
         // for ( int i = 0; i < terms_to_add.size(); ++i ) 
         //     state.fix( terms_to_add.get(i) );
 
 
         // Compute the new lookaheads.
-        for ( NonTerminal X : state.rules.keySet() ) {
-            List<LRRule> rules = state.get_rule( X );
-            for ( LRRule rule : rules ) {
+        // for ( NonTerminal X : state.rules.keySet() ) {
+        //     List<LRRule> rules = state.get_rule( X );
+        //     for ( LRRule rule : rules ) {
                
-                // Add the lookahead from looking at the current rule
-                if ( rule.dot+1 < rule.size() ) {
-                    Term lahead = rule.terms.get( rule.dot + 1 );
-                    if ( rule.get_dot_item() instanceof NonTerminal ) {
-                        System.out.println( "(1)adding " + lahead + " to " + rule.terms + " with dot " + rule.dot + " in state " + state.id );
-                        getLookahead.get( rule.get_dot_item() ).add( lahead );
+        //         // Add the lookahead from looking at the current rule
+        //         if ( rule.dot+1 < rule.size() ) {
+        //             Term lahead = rule.terms.get( rule.dot + 1 );
+        //             if ( rule.get_dot_item() instanceof NonTerminal ) {
+        //                 System.out.println( "(1)adding " + lahead + " to " + rule.terms + " with dot " + rule.dot + " in state " + state.id );
+        //                 getLookahead.get( rule.get_dot_item() ).add( lahead );
 
-                    }
+        //             }
                     
-                } else { // Add the lookahead from the Productions ruleset.
-                    if ( getLookahead.containsKey( X ) ) {
-                        Set<Term> lahead = getLookahead.get( X );
-                        if ( rule.get_dot_item() instanceof NonTerminal ) {
-                            System.out.println( "(2)adding " + lahead + " to state " + state.id );
-                            getLookahead.get( rule.get_dot_item() ).addAll( lahead );
+        //         } else { // Add the lookahead from the Productions ruleset.
+        //             if ( getLookahead.containsKey( X ) ) {
+        //                 Set<Term> lahead = getLookahead.get( X );
+        //                 if ( rule.get_dot_item() instanceof NonTerminal ) {
+        //                     System.out.println( "(2)adding " + lahead + " to state " + state.id );
+        //                     getLookahead.get( rule.get_dot_item() ).addAll( lahead );
 
-                        }
+        //                 }
                         
-                    }
-                }
+        //             }
+        //         }
                  
-            }
-            // getLookahead.clear();
-            // g.terms().forEach( t -> getLookahead.put( t, Utils.toSet() ) ); // Fill it with empty lookahead to avoid null.
-            // g.nonTerms().forEach( t -> getLookahead.put( t, Utils.toSet() ) ); // Fill it with empty lookahead to avoid null.
-        }
-        for ( LRRule rule : state.containedRules ) {
-            // Add the found lookaheads.
-            Term t = rule.get_dot_item();
-            if ( !(t instanceof NonTerminal) ) continue;
-            for ( LRRule r : state.rules.get( (NonTerminal) t ) ) {
-            // for ( LRRule r : g.get_rule( (NonTerminal) t ) )  { // HERE?!?!?!?!?!?
-                try {
-                    r.lookahead.addAll( getLookahead.get( t ) );
-                    System.out.println( "(3) adding " + getLookahead.get( t ) + " to " + r.terms + " with dot " + r.dot + " in state[" + state.id + "]" );
-                } catch ( UnsupportedOperationException e ) {
-                    // We tried to modify the locked ruleset, that was given to us from the previous state.'
-                    // This "is" a mistake, but I don't know how to fix it currently.
-                }
+        //     }
+        //     // getLookahead.clear();
+        //     // g.terms().forEach( t -> getLookahead.put( t, Utils.toSet() ) ); // Fill it with empty lookahead to avoid null.
+        //     // g.nonTerms().forEach( t -> getLookahead.put( t, Utils.toSet() ) ); // Fill it with empty lookahead to avoid null.
+        // }
+        // for ( LRRule rule : state.containedRules ) {
+        //     // Add the found lookaheads.
+        //     Term t = rule.get_dot_item();
+        //     if ( !(t instanceof NonTerminal) ) continue;
+        //     for ( LRRule r : state.rules.get( (NonTerminal) t ) ) {
+        //     // for ( LRRule r : g.get_rule( (NonTerminal) t ) )  { // HERE?!?!?!?!?!?
+        //         try {
+        //             r.lookahead.addAll( getLookahead.get( t ) );
+        //             System.out.println( "(3) adding " + getLookahead.get( t ) + " to " + r.terms + " with dot " + r.dot + " in state[" + state.id + "]" );
+        //         } catch ( UnsupportedOperationException e ) {
+        //             // We tried to modify the locked ruleset, that was given to us from the previous state.'
+        //             // This "is" a mistake, but I don't know how to fix it currently.
+        //         }
                 
-            }
-        }
-        System.out.println( "\t\tAfter closure");
-        System.out.println( state );
+        //     }
+        // }
+        // System.out.println( "\t\tAfter closure");
+        // System.out.println( state );
         state.containedRules.forEach( r -> r.lock());
     }
 
@@ -285,11 +310,11 @@ public class LRParser {
         // (2) Generate the new state, and insert all the rules from the original state 
         //      and progress them by one.
         LRState ste = new LRState();
-        System.out.println( "Adding to state: " + ste.id );
+        // System.out.println( "Adding to state: " + ste.id );
         for ( NonTerminal X : mapper.keySet() ) {
             for ( LRRule r : mapper.get( X ) ) {
-                System.out.println( "Mapper: " + r.toString() + "\t\t" + r.lookahead );
-                LRRule rule = new LRRule( Utils.toList( r.terms ), Utils.toSet( r.lookahead ), r.dot+1, r.id ); // Same rule, but increment dot.
+                // System.out.println( "Mapper: " + r.toString() + "\t\t" + r.lookahead );
+                LRRule rule = new LRRule( X, Utils.toList( r.terms ), Utils.toSet( r.lookahead ), r.dot+1, r.id ); // Same rule, but increment dot.
                 
                 // rule.dot = r.dot+1;
                 ste.add( X, rule );
@@ -384,118 +409,118 @@ public class LRParser {
         //     LRParser.parse( g, S_ );
         // }
 
-        // { // Not valid LR!!!!!!!
-            // NonTerminal S = new NonTerminal( "S", true );
-            // NonTerminal G = new NonTerminal( "G" );
-            // NonTerminal P = new NonTerminal( "P" );
-            // NonTerminal R = new NonTerminal( "R" );
-    
-            // Terminal dollar = new Terminal( "$" );
-            // dollar.is_EOP = true;
-            // Terminal id = new Terminal( "id" );
-            // Terminal colon = new Terminal( ":" );
-            // Terminal eps = new Terminal();
-    
-            // Grammar g = new Grammar();
-    
-            // g.add_rule( S, List.of( G, dollar ) );
-            
-            // g.add_rule( G, List.of( P ) );
-            // g.add_rule( G, List.of( P, G ) );
-            // g.add_rule( P, List.of( id, colon, R ) );
-            // g.add_rule( R, List.of( eps ) ); 
-            // g.add_rule( R, List.of( id, R ) ); 
-    
-            // LRParser.parse( g, S );
-
-        //     // +-------------------------------+
-        //     // |State: 0                       |
-        //     // +-------------------------------+
-        //     // |Rules     |Lookahead|Goto State|
-        //     // |----------+---------+----------|
-        //     // |S -> .G$  |[?]      |G: 11     |
-        //     // |----------+---------+----------|
-        //     // |G -> .P   |[$]      |P: 1      |
-        //     // |----------+---------+----------|
-        //     // |G -> .PG  |[$]      |P: 1      |
-        //     // |----------+---------+----------|
-        //     // |P -> .id:R|[$, G]   |id: 3     |
-        //     // +-------------------------------+
-        //     // +-------------------------------+
-        //     // |State: 1                       |
-        //     // +-------------------------------+
-        //     // |Rules     |Lookahead|Goto State|
-        //     // |----------+---------+----------|
-        //     // |G -> P.   |[$]      |None      |
-        //     // |----------+---------+----------|
-        //     // |G -> .P   |[$]      |P: 1      |
-        //     // |----------+---------+----------|
-        //     // |G -> P.G  |[$]      |G: 9      |
-        //     // |----------+---------+----------|
-        //     // |G -> .PG  |[$]      |P: 1      |
-        //     // |----------+---------+----------|
-        //     // |P -> .id:R|[$, G]   |id: 3     |
-        //     // +-------------------------------+
-        //     // It produces above states. However, shouldn't the last entry be id instead of G in lookahead
-        //     // The rest looks fine, only the lookaheads are wrong. 
-
-        //     // The table it produces is also wrong. It for some reason creates duplicate rows?
-        //     // +------------------------+
-        //     // |Parse-table             |
-        //     // +------------------------+
-        //     // |State|$ |: |id|P |R |G  |
-        //     // |-----+--+--+--+--+--+---|
-        //     // |0    |  |  |s3|g1|  |g11|
-        //     // |-----+--+--+--+--+--+---|
-        //     // |1    |r1|  |s3|g1|  |g9 |
-        //     // |-----+--+--+--+--+--+---|
-        //     // |3    |  |s4|  |  |  |   |
-        //     // |-----+--+--+--+--+--+---|
-        //     // |3    |  |s4|  |  |  |   |
-        //     // |-----+--+--+--+--+--+---|
-        //     // |4    |  |  |s6|  |g5|   |
-        //     // |-----+--+--+--+--+--+---|
-        //     // |4    |  |  |s6|  |g5|   |
-        //     // |-----+--+--+--+--+--+---|
-        //     // |5    |r3|  |  |  |  |r3 |
-        //     // |-----+--+--+--+--+--+---|
-        //     // |5    |r3|  |  |  |  |r3 |
-        //     // |-----+--+--+--+--+--+---|
-        //     // |6    |  |  |s6|  |g7|   |
-        //     // |-----+--+--+--+--+--+---|
-        //     // |6    |  |  |s6|  |g7|   |
-        //     // |-----+--+--+--+--+--+---|
-        //     // |7    |  |  |  |  |  |   |
-        //     // |-----+--+--+--+--+--+---|
-        //     // |7    |  |  |  |  |  |   |
-        //     // |-----+--+--+--+--+--+---|
-        //     // |9    |r2|  |  |  |  |   |
-        //     // |-----+--+--+--+--+--+---|
-        //     // |11   |a |  |  |  |  |   |
-        //     // +------------------------+
-        // }
-
-        {
+    //     { // Not valid LR!!!!!!!
             NonTerminal S = new NonTerminal( "S", true );
-            NonTerminal E = new NonTerminal( "E" );
-
+            NonTerminal G = new NonTerminal( "G" );
+            NonTerminal P = new NonTerminal( "P" );
+            NonTerminal R = new NonTerminal( "R" );
+    
             Terminal dollar = new Terminal( "$" );
             dollar.is_EOP = true;
-            Terminal plus = new Terminal( "+" );
             Terminal id = new Terminal( "id" );
-            Terminal lparen = new Terminal( "(" );
-            Terminal rparen = new Terminal( ")" );
-            
+            Terminal colon = new Terminal( ":" );
+            Terminal eps = new Terminal();
+    
             Grammar g = new Grammar();
     
-            g.add_rule( S, List.of( E, dollar ) );
+            g.add_rule( S, List.of( G, dollar ) );
             
-            g.add_rule( E, List.of( id ) );
-            g.add_rule( E, List.of( id, lparen, E, rparen ) );
-            g.add_rule( E, List.of( E, plus, id ) );
+            g.add_rule( G, List.of( P ) );
+            g.add_rule( G, List.of( P, G ) );
+            g.add_rule( P, List.of( id, colon, R ) );
+            g.add_rule( R, List.of( eps ) ); 
+            g.add_rule( R, List.of( id, R ) ); 
     
             LRParser.parse( g, S );
-        }
+
+    //         // +-------------------------------+
+    //         // |State: 0                       |
+    //         // +-------------------------------+
+    //         // |Rules     |Lookahead|Goto State|
+    //         // |----------+---------+----------|
+    //         // |S -> .G$  |[?]      |G: 11     |
+    //         // |----------+---------+----------|
+    //         // |G -> .P   |[$]      |P: 1      |
+    //         // |----------+---------+----------|
+    //         // |G -> .PG  |[$]      |P: 1      |
+    //         // |----------+---------+----------|
+    //         // |P -> .id:R|[$, G]   |id: 3     |
+    //         // +-------------------------------+
+    //         // +-------------------------------+
+    //         // |State: 1                       |
+    //         // +-------------------------------+
+    //         // |Rules     |Lookahead|Goto State|
+    //         // |----------+---------+----------|
+    //         // |G -> P.   |[$]      |None      |
+    //         // |----------+---------+----------|
+    //         // |G -> .P   |[$]      |P: 1      |
+    //         // |----------+---------+----------|
+    //         // |G -> P.G  |[$]      |G: 9      |
+    //         // |----------+---------+----------|
+    //         // |G -> .PG  |[$]      |P: 1      |
+    //         // |----------+---------+----------|
+    //         // |P -> .id:R|[$, G]   |id: 3     |
+    //         // +-------------------------------+
+    //         // It produces above states. However, shouldn't the last entry be id instead of G in lookahead
+    //         // The rest looks fine, only the lookaheads are wrong. 
+
+    //         // The table it produces is also wrong. It for some reason creates duplicate rows?
+    //         // +------------------------+
+    //         // |Parse-table             |
+    //         // +------------------------+
+    //         // |State|$ |: |id|P |R |G  |
+    //         // |-----+--+--+--+--+--+---|
+    //         // |0    |  |  |s3|g1|  |g11|
+    //         // |-----+--+--+--+--+--+---|
+    //         // |1    |r1|  |s3|g1|  |g9 |
+    //         // |-----+--+--+--+--+--+---|
+    //         // |3    |  |s4|  |  |  |   |
+    //         // |-----+--+--+--+--+--+---|
+    //         // |3    |  |s4|  |  |  |   |
+    //         // |-----+--+--+--+--+--+---|
+    //         // |4    |  |  |s6|  |g5|   |
+    //         // |-----+--+--+--+--+--+---|
+    //         // |4    |  |  |s6|  |g5|   |
+    //         // |-----+--+--+--+--+--+---|
+    //         // |5    |r3|  |  |  |  |r3 |
+    //         // |-----+--+--+--+--+--+---|
+    //         // |5    |r3|  |  |  |  |r3 |
+    //         // |-----+--+--+--+--+--+---|
+    //         // |6    |  |  |s6|  |g7|   |
+    //         // |-----+--+--+--+--+--+---|
+    //         // |6    |  |  |s6|  |g7|   |
+    //         // |-----+--+--+--+--+--+---|
+    //         // |7    |  |  |  |  |  |   |
+    //         // |-----+--+--+--+--+--+---|
+    //         // |7    |  |  |  |  |  |   |
+    //         // |-----+--+--+--+--+--+---|
+    //         // |9    |r2|  |  |  |  |   |
+    //         // |-----+--+--+--+--+--+---|
+    //         // |11   |a |  |  |  |  |   |
+    //         // +------------------------+
+        // }
+
+        // {
+        //     NonTerminal S = new NonTerminal( "S", true );
+        //     NonTerminal E = new NonTerminal( "E" );
+
+        //     Terminal dollar = new Terminal( "$" );
+        //     dollar.is_EOP = true;
+        //     Terminal plus = new Terminal( "+" );
+        //     Terminal id = new Terminal( "id" );
+        //     Terminal lparen = new Terminal( "(" );
+        //     Terminal rparen = new Terminal( ")" );
+            
+        //     Grammar g = new Grammar();
+    
+        //     g.add_rule( S, List.of( E, dollar ) );
+            
+        //     g.add_rule( E, List.of( id ) );
+        //     g.add_rule( E, List.of( id, lparen, E, rparen ) );
+        //     g.add_rule( E, List.of( E, plus, id ) );
+    
+        //     LRParser.parse( g, S );
+        // }
     }
 
     // https://serokell.io/blog/how-to-implement-lr1-parser

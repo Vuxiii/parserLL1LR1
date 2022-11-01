@@ -5,7 +5,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import src.Utils.TablePrinter;
@@ -21,6 +20,7 @@ public class ParseTable {
     }
 
     public void add( ParserState state ) {
+        // System.out.println( "Adding state " + state.current_state.id );
         states.add( state );
     }
 
@@ -73,6 +73,7 @@ public class ParseTable {
         states_.sort( Comparator.comparing( state -> state.current_state.id ));
 
         for ( ParserState state : states_ ) {
+            // System.out.println( "\n\nLooking at state " + state.current_state.id );
             String[] row = new String[size];
             for ( int i = 0; i < row.length; ++i ) row[i] = "";
             row[0] = "" + state.current_state.id;
@@ -82,6 +83,7 @@ public class ParseTable {
 
             // Find shift and goto actions.
             for ( Term term : mapper.keySet() ) {
+                // System.out.println( "At " + term );
                 if ( term == Rule.EOR || term == Rule.EOP ) { 
                     // System.out.println( "FOund " + term + " at state " + state.current_state.id ); continue; 
                     // These are actually the reduce rules.... So (9) can be removed.
@@ -97,7 +99,9 @@ public class ParseTable {
                     mode = "g";
                 else
                     mode = "s";
+                // System.out.println( "row[" + term_to_index.get(term) + "] = " + row[ term_to_index.get(term) ] );
                 row[ term_to_index.get(term) ] += mode + mapper.get( term ).id;
+                // System.out.println( "row[" + term_to_index.get(term) + "] = " + row[ term_to_index.get(term) ] );
             }
 
             // Find reduce actions (9)

@@ -66,7 +66,7 @@ public class Grammar {
     }
 
     public void add_rule( NonTerminal key, List<Term> rule ) {
-        LRRules.merge( key, Utils.toList( new LRRule( Utils.toList( rule ), Utils.toSet() ) ), (o, n) -> { o.addAll( n ); return o; } );
+        LRRules.merge( key, Utils.toList( new LRRule( key, Utils.toList( rule ), Utils.toSet() ) ), (o, n) -> { o.addAll( n ); return o; } );
         
     }
 
@@ -74,14 +74,129 @@ public class Grammar {
         return LRRules.get( key ).stream().map( r -> r.copy() ).collect( Collectors.toList() );
     }
 
-    public Set<Term> get_firsts( NonTerminal X ) {
+    private Set<NonTerminal> _get_nulls() { // do this once, return cached.
+        Set<NonTerminal> nulls = new HashSet<>();
 
+        int size;
+        do {
+            size = nulls.size();
 
-        return null;
+            for ( NonTerminal N : LRRules.keySet() ) {
+                List<LRRule> rules_for_N = get_rule( N );
+                for ( LRRule rule : rules_for_N ) {
+                    int i = 0;
+
+                    // Removes all the first NULLS.
+                    while ( i < rule.size() && ((rule.terms.get( i ) instanceof Terminal && ((Terminal) rule.terms.get( i )).is_epsilon)
+                            || nulls.contains( rule.terms.get( i ) )) ) {
+                        ++i;
+                    }  
+                    
+                    if ( i == rule.size() ) {
+                        nulls.add( N );
+                    }
+                }
+            }
+
+        } while ( size != nulls.size() );
+        
+
+        return nulls;
     }
 
-    public Set<Term> get_follows( NonTerminal X ) {
-        return null;
+    
+    private Map< NonTerminal, Set<Terminal> > _get_firsts( Set<NonTerminal> nulls ) {
+
+        Map< NonTerminal, Set<Terminal> > firsts = new HashMap<>();
+
+        for ( NonTerminal N : LRRules.keySet() ) 
+            firsts.put( N, new HashSet<>() );
+
+        int size;
+        do {
+            size = firsts.values().parallelStream().map( li -> li.size() ).reduce(0, Integer::sum);
+            
+
+            // System.out.println( "-".repeat(20) );
+            
+            // firsts.forEach( (k, v) -> System.out.println( "First(" + k + ") = {" + v + "}" ) );
+
+            // System.out.println( "-".repeat(20) );
+            
+            for ( NonTerminal N : LRRules.keySet() ) {
+                for ( Rule r : LRRules.get( N ) ) {
+
+                    int i = 0;
+                    Term current = r.terms.get(i);
+                    if ( current instanceof Terminal ) {
+                        // Ignore epsilons.
+                        if ( ((Terminal) current).is_epsilon ) continue;
+
+                        firsts.get( N ).add( (Terminal) current );
+                    } else {
+                        boolean addNext = true; //current instanceof NonTerminal && 
+                        while( addNext ) { // We know it is a NonTerminal from above.
+                            
+                            if ( current instanceof NonTerminal ){
+                                firsts.get( N ).addAll( firsts.get( (NonTerminal) current ) );
+
+
+                                addNext = nulls.contains( (NonTerminal) current );
+                            } else {
+                                
+                                firsts.get( N ).add( (Terminal) current );
+                                
+
+                                addNext = false;
+                            }
+                            
+                            i++;
+                            current = i < r.size() ? r.terms.get( i ) : null;
+                            addNext = addNext && current != null;
+                        }   
+                    }
+                }
+            }
+        } while( size != firsts.values().parallelStream().map( li -> li.size() ).reduce(0, Integer::sum) );
+
+
+        return firsts;
+
+    }
+
+
+    public Set<Term> get_firsts( LRRule rule, LRState state ) {
+        Set<NonTerminal> nulls = _get_nulls();
+        Map< NonTerminal, Set<Terminal> > firsts = _get_firsts( nulls );
+        Set<Term> ts = new HashSet<>();
+
+        int i = rule.dot + 1;
+        
+        while( i < rule.size() && nulls.contains( rule.get_term( i ) ) ) {
+            // System.out.println( "(1)Adding " + rule.get_term( i ) + " from " + rule.X + " -> " + rule.terms + " dot: " + rule.dot );
+            ts.add( rule.get_term( i ) );
+            i++;
+        }
+        // System.out.println( "i is " + i );
+        // System.out.println( "rule size is " + rule.size() );
+        if ( i < rule.size() ) {
+            if ( rule.get_term( i ) instanceof NonTerminal ) {
+                // System.out.println( "(2)Adding " + firsts.get( rule.get_term( i ) ) + " from " + rule.X + " -> " + rule.terms  + " dot: " + rule.dot);
+                ts.addAll( firsts.get( rule.get_term( i ) ) );
+            } else {
+                // System.out.println( "(3)Adding " + rule.get_term( i ) + " from " + rule.X + " -> " + rule.terms  + " dot: " + rule.dot);
+                ts.add( rule.get_term( i ) );
+            }
+        } else {
+            // System.out.println( "(4)Adding " + rule.lookahead + " from " + rule.X + " -> " + rule.terms + " dot: " + rule.dot);
+            // if ( rule.dot == rule.size() )
+                // System.out.println( "(5)Adding " + firsts.get( rule.X ) + " from " + rule.X + " -> " + rule.terms  + " dot: " + rule.dot);
+            ts.addAll( rule.lookahead );
+            if ( rule.dot == rule.size() )
+                ts.addAll( firsts.get( rule.X ) );
+        }
+
+        return ts;
     }
 
     public String toString() {
