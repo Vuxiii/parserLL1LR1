@@ -20,7 +20,6 @@ public class ParseTable {
     }
 
     public void add( ParserState state ) {
-        // System.out.println( "Adding state " + state.current_state.id );
         states.add( state );
     }
 
@@ -46,7 +45,6 @@ public class ParseTable {
         int size = terms.size() + nterms.size() + 1;
         String[] header = new String[ size ];
         header[0] = "State";
-        // System.out.println( size );
         
         for ( int i = 0; i < terms.size(); ++i ) {
             if ( terms.get(i) == Rule.EOP || terms.get(i) == Rule.EOR ) continue;
@@ -60,35 +58,28 @@ public class ParseTable {
             if ( nterms.get(i) == Rule.EOP || nterms.get(i) == Rule.EOR ) continue;
             int offset = i+terms.size()+1;
             Term t = nterms.get( i );
-            // System.out.println( t );
 
             header[offset] = t.name;
             term_to_index.put(t, offset);
         }
         tp.push( header );
-        // for ( String s : header ) System.out.println( s );
+        
 
         // Maybe sort states by id before.
         List<ParserState> states_ = Utils.toList( states );
         states_.sort( Comparator.comparing( state -> state.current_state.id ));
 
         for ( ParserState state : states_ ) {
-            // System.out.println( "\n\nLooking at state " + state.current_state.id );
             String[] row = new String[size];
             for ( int i = 0; i < row.length; ++i ) row[i] = "";
             row[0] = "" + state.current_state.id;
             
             Map<Term, LRState> mapper = state.current_state.move_to_state;
-            // System.out.println( mapper );
-
+            
             // Find shift and goto actions.
             for ( Term term : mapper.keySet() ) {
                 // System.out.println( "At " + term );
-                if ( term == Rule.EOR || term == Rule.EOP ) { 
-                    // System.out.println( "FOund " + term + " at state " + state.current_state.id ); continue; 
-                    // These are actually the reduce rules.... So (9) can be removed.
-                
-                }
+                if ( term == Rule.EOR || term == Rule.EOP ) { }
                 
                 if ( mapper.get( term ) == null ) continue;
 
@@ -99,9 +90,7 @@ public class ParseTable {
                     mode = "g";
                 else
                     mode = "s";
-                // System.out.println( "row[" + term_to_index.get(term) + "] = " + row[ term_to_index.get(term) ] );
                 row[ term_to_index.get(term) ] += mode + mapper.get( term ).id;
-                // System.out.println( "row[" + term_to_index.get(term) + "] = " + row[ term_to_index.get(term) ] );
             }
 
             // Find reduce actions (9)
@@ -109,11 +98,11 @@ public class ParseTable {
                 if ( rule.dot == rule.size() || rule.get_dot_item() instanceof Terminal && ((Terminal)rule.get_dot_item()).is_epsilon ) {
                     
                     for ( Term term : rule.lookahead ) {
-                        row[ term_to_index.get( term ) ] = "r" + rule.id;
+                        row[ term_to_index.get( term ) ] += "r" + rule.id;
                     }
 
                 } else if ( rule.get_dot_item().name.equals( "$" ) ) {
-                    row[ term_to_index.get( rule.get_dot_item() ) ] = "a";
+                    row[ term_to_index.get( rule.get_dot_item() ) ] += "a";
                 } 
             }
 
